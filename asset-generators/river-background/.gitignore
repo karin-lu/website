@@ -11,8 +11,18 @@ dream-candidate/output*/
 dream-candidate/textures/
 dream-candidate/*-report*.json
 
-# Accepted v5 Blender masters are source artifacts tracked in Git.
+# All v5 authoring inputs are source artifacts tracked in Git.
+!dream-candidate/output/
+dream-candidate/output/*
+!dream-candidate/output/river_dream.blend
+!dream-candidate/output/build_report.json
 !dream-candidate/output-v5/
 dream-candidate/output-v5/*
 !dream-candidate/output-v5/river_dream.blend
 !dream-candidate/output-v5/river_dream_layer_editor.blend
+!dream-candidate/output-v5/build_report.json
+!dream-candidate/textures/
+dream-candidate/textures/*
+!dream-candidate/textures/foliage-components-v3.png
+!dream-candidate/textures/soft-moss-v2.png
+!dream-candidate/textures/hanging-moss-soft-strands-v5.png

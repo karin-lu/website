@@ -1,4 +1,4 @@
-"""Bind a downloaded v5 scene to this checkout, without saving artwork."""
+"""Bind a v5 scene to this checkout, without saving artwork."""
 import os
 from pathlib import Path
 import bpy

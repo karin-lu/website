@@ -1,0 +1,46 @@
+{
+  "name": "River Dream \u2014 The Sunken Grotto",
+  "candidate": true,
+  "checkpoints": [
+    [
+      10.85,
+      -8
+    ],
+    [
+      22.309037903755485,
+      -7.461823132087655
+    ],
+    [
+      20.02503521820861,
+      -2.2266864133376556
+    ],
+    [
+      22.24976879975158,
+      4.282593982170157
+    ],
+    [
+      9.470060547798452,
+      9.136951587150627
+    ],
+    [
+      -1.5374339590374848,
+      12.026209094474844
+    ],
+    [
+      19.517361420601187,
+      14.21996092552953
+    ],
+    [
+      26.559094265859727,
+      22.836831094670224
+    ]
+  ],
+  "routeSamples": 326,
+  "rocks": 25,
+  "routeRocks": 10,
+  "sourceGeometry": "Existing v5 procedural boulders, new outline recipes",
+  "distantSource": "Packed generated matte image",
+  "sceneSpecSha256": "48e805ecbe4cb4576bfba6bbcab6daaafb4125d40eb9066100fed09b8f753e5e",
+  "foregroundMissing": [],
+  "package": "rope/public/backgrounds/river-dream"
+}

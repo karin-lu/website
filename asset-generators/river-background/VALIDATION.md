@@ -21,6 +21,12 @@ Passed:
 - Real procedural rock generation, exact mesh validation, replacement with
   backup, and vegetation refit. Placement, other rocks and the saved input
   scene are preserved.
+- A Git-only snapshot with no downloaded authoring archive or generated cache:
+  all four rock recipes generated from scratch, v5 rebuilt from the committed
+  bootstrap and textures, source checks, layer editing, vegetation refit and
+  artist-control loading passed. All three committed scenes and source textures
+  retained their exact bytes. Generator Python dependencies were installed
+  packages; no artwork or rock caches were reused from another checkout.
 
 `bun run test` completed with **59/65 steps passing**. Its six failing suites
 were rerun against an untouched archive of `f522917` and reproduced:

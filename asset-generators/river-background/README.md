@@ -43,11 +43,19 @@ Both accepted v5 Blender files are committed directly in this branch:
 - [Runtime master](dream-candidate/output-v5/river_dream.blend).
 - [Artist layer-editor master](dream-candidate/output-v5/river_dream_layer_editor.blend).
 
-Their textures are packed, so the launcher can open them after cloning.
-For procedural rebuilding, fetch the bootstrap scene, build metadata and loose
-source textures with `python asset-generators/river-background/fetch_authoring.py`.
-The release archive also retains copies of the accepted masters. The fetch
-refuses to overwrite any differing local artwork.
+All procedural authoring inputs are also committed:
+
+- [Bootstrap scene](dream-candidate/output/river_dream.blend), used to rebuild v5.
+- [Bootstrap metadata](dream-candidate/output/build_report.json) and
+  [accepted v5 metadata](dream-candidate/output-v5/build_report.json).
+- [Foliage atlas](dream-candidate/textures/foliage-components-v3.png),
+  [surface moss](dream-candidate/textures/soft-moss-v2.png) and
+  [hanging moss](dream-candidate/textures/hanging-moss-soft-strands-v5.png).
+
+The scene textures are packed as well. Cloning provides every scene, recipe,
+texture and script needed for editing, refitting and procedural rebuilding;
+no authoring asset download is required. Install the Python packages above and
+the Bun packages for export. Generated rock caches are rebuilt locally.
 
 Use the launcher after moving/cloning the checkout: it binds scene paths and
 Python to this checkout before registering the River sidebar. Old embedded
@@ -77,12 +85,20 @@ parameters. `connected_grotto.py` defines their placement. `growth_patches.py`,
 `hanging_moss.py` and `build_layered.py` implement the shared planting stages.
 The boulder generator is reused directly from `rope/tools/blender/boulders`.
 
-Run `build_rocks.py` with the generator Python to populate `cache-v5` (use
-`--blender` if needed). Then open the downloaded `output/river_dream.blend`
-bootstrap in background Blender and run `build_connected.py`. This intentionally
-replaces `output-v5/river_dream.blend`; preserve manual edits first. It does not
-replace the separate artist master. Use **Refit plants** inside the layer editor
-to update vegetation without rebuilding rock geometry.
+From the repository root in PowerShell, after installing the packages above:
+
+```powershell
+$blender = 'C:/Program Files/Blender Foundation/Blender 5.2/blender.exe'
+rope/.venv/Scripts/python asset-generators/river-background/dream-candidate/build_rocks.py --blender $blender
+& $blender --factory-startup --background asset-generators/river-background/dream-candidate/output/river_dream.blend --python-exit-code 1 --python asset-generators/river-background/dream-candidate/build_connected.py
+```
+
+This populates `cache-v5` from the four committed recipes, then rebuilds from
+the committed bootstrap. It intentionally replaces
+`output-v5/river_dream.blend` and its build report; preserve manual edits first.
+It does not replace the separate artist master. Review and commit accepted
+source changes. Use **Refit plants** inside the layer editor to update vegetation
+without rebuilding rock geometry.
 
 ## Verification
 
@@ -96,7 +112,7 @@ bun run scripts/test-background-package.ts
 bun run scripts/test-level-invalidation.ts
 node ../asset-generators/river-background/pipeline/verify_package.mjs public/backgrounds/river-dream-v5
 bun run build
-# With the development server running, and authoring assets downloaded:
+# With the development server running:
 bun run scripts/verify-dream-route.ts all
 ```
 
@@ -104,17 +120,20 @@ Set `PREVIEW_URL` or `CHROMIUM` when the server or browser uses another location
 The route checks capture console diagnostics with each image. They check camera
 coverage and settled time samples, not a full playthrough or hardware FPS.
 Blender scripts `pipeline/verify_layer_editor.py`, `verify_depth_tools.py` and
-`verify_polygon_tools.py` exercise the actual editor; run each with the saved v5
-master, `--background` and `--python-exit-code 1`. They do not save over it.
+`verify_polygon_tools.py` exercise the actual editor; run each with
+`dream-candidate/output-v5/river_dream.blend`, `--background` and
+`--python-exit-code 1`. These checks assume the unedited runtime master as their
+recipe baseline and do not save over it.
 
 ## Storage and future updates
 
-Source code, the package manifest and both accepted v5 Blender masters are in
-Git. Runtime GLBs and images follow the repository's release-store convention.
+The complete authoring pipeline is in Git: source code, all three Blender
+scenes, build metadata, recipes and source textures. The package manifest is
+also committed. Runtime GLBs and images follow the repository's release-store convention.
 SHA-256 and byte counts are pinned in `rope/src/render3d/backgroundAssets.json`;
-downloads fail on mismatches. The supplemental authoring archive and runtime
-files live in the fork's `blender-pipeline-v5-assets` release. Commit changes to
-the accepted Blender masters directly. A subsequent accepted export needs new
-release assets and updated pins
-alongside `rope/public/backgrounds/river-dream-v5/package.json`. Do not replace
-bytes behind existing pins. Generated local output remains ignored.
+downloads fail on mismatches. Only running the game requires the pinned runtime
+files from the fork's `blender-pipeline-v5-assets` release (or a local export).
+Commit accepted authoring changes directly. A subsequent accepted export needs
+new release assets and updated pins alongside
+`rope/public/backgrounds/river-dream-v5/package.json`. Do not replace bytes behind
+existing pins. Generated caches, previews, backups and verification output remain ignored.

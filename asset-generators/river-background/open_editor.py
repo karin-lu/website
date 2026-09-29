@@ -13,7 +13,7 @@ parser.add_argument('--blender', default=os.environ.get('BLENDER') or shutil.whi
 args = parser.parse_args()
 scene = ROOT / 'dream-candidate/output-v5/river_dream_layer_editor.blend'
 if not scene.is_file():
-    parser.error('Fetch authoring assets first: python asset-generators/river-background/fetch_authoring.py')
+    parser.error('The committed artist scene is missing. Restore dream-candidate/output-v5/river_dream_layer_editor.blend from Git.')
 if not Path(args.blender).is_file():
     parser.error('Set BLENDER or pass --blender with the Blender executable path')
 env = {**os.environ, 'RIVER_PYTHON': os.environ.get('RIVER_PYTHON', sys.executable)}

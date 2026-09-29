@@ -1,0 +1,438 @@
+{
+  "name": "Sunken Grotto v5 / layered grotto",
+  "candidate": true,
+  "checkpoints": [
+    [
+      10.85,
+      -8
+    ],
+    [
+      22.309037903755485,
+      -7.461823132087655
+    ],
+    [
+      20.02503521820861,
+      -2.2266864133376556
+    ],
+    [
+      22.24976879975158,
+      4.282593982170157
+    ],
+    [
+      9.470060547798452,
+      9.136951587150627
+    ],
+    [
+      -1.5374339590374848,
+      12.026209094474844
+    ],
+    [
+      19.517361420601187,
+      14.21996092552953
+    ],
+    [
+      26.559094265859727,
+      22.836831094670224
+    ]
+  ],
+  "routeSamples": 326,
+  "rocks": 13,
+  "routeRocks": 5,
+  "sourceGeometry": "Existing v5 procedural boulders, new outline recipes",
+  "distantSource": "Packed generated matte image",
+  "sceneSpecSha256": "824fe70b16bb7e2a578ec78ec947cb3791a61ac24cbfcb819be8933f003f027d",
+  "foregroundMissing": [],
+  "package": "rope/public/backgrounds/river-dream-v5",
+  "sourceMasterSha256": "70481788d0c15a0d34d6440b63c84a699d43686d666050d20c9332b287675b00",
+  "removedPlantMeshes": 68,
+  "foliageCards": 28,
+  "foliageTriangles": 280,
+  "mossSurfacePatches": 4,
+  "mossSurfaceTriangles": 290,
+  "clusters": [
+    {
+      "rock": "V5 / red terraced bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 34.0,
+      "pieces": 2,
+      "screenSizeFactor": 1.0
+    },
+    {
+      "rock": "V5 / red terraced bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 34.0,
+      "pieces": 4,
+      "screenSizeFactor": 1.0
+    },
+    {
+      "rock": "V5 / orange riverbank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 34.0,
+      "pieces": 4,
+      "screenSizeFactor": 1.0
+    },
+    {
+      "rock": "V5 / orange riverbank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 34.0,
+      "pieces": 3,
+      "screenSizeFactor": 1.0
+    },
+    {
+      "rock": "V5 / route chamber 2 bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 42.0,
+      "pieces": 3,
+      "screenSizeFactor": 0.9046583305343995
+    },
+    {
+      "rock": "V5 / route chamber 2 bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 42.0,
+      "pieces": 4,
+      "screenSizeFactor": 0.9046583305343995
+    },
+    {
+      "rock": "V5 / route chamber 4 bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 45.0,
+      "pieces": 2,
+      "screenSizeFactor": 0.864984831230061
+    },
+    {
+      "rock": "V5 / route chamber 4 bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 45.0,
+      "pieces": 4,
+      "screenSizeFactor": 0.864984831230061
+    },
+    {
+      "rock": "V5 / route chamber 4 bank",
+      "layer": "10_BACKGROUND_NEAR",
+      "depth": 45.0,
+      "pieces": 2,
+      "screenSizeFactor": 0.864984831230061
+    }
+  ],
+  "spriteBounds": [
+    [
+      176,
+      54,
+      567,
+      611
+    ],
+    [
+      789,
+      133,
+      1129,
+      602
+    ],
+    [
+      224,
+      643,
+      465,
+      1204
+    ],
+    [
+      684,
+      749,
+      1187,
+      1162
+    ]
+  ],
+  "spriteRoots": [
+    341.0,
+    936.0,
+    324.0,
+    928.0
+  ],
+  "atlasSha256": "bbd46bc1aa504c2857fc2d38853584daad04b2007bc69c36e55d9f3309a10296",
+  "hangingMoss": {
+    "clusters": [
+      {
+        "rock": "V5 / orange riverbank",
+        "index": 0,
+        "width": 2.4497013530334675,
+        "length": 2.106743163608782,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.8,
+        "completeStrands": 3,
+        "cards": 3
+      },
+      {
+        "rock": "V5 / red terraced bank",
+        "index": 1,
+        "width": 3.233663611979239,
+        "length": 2.7809507063021455,
+        "style": "cascade",
+        "layers": 1,
+        "moisture": 0.8,
+        "completeStrands": 7,
+        "cards": 7
+      },
+      {
+        "rock": "V5 / route chamber 3 ceiling",
+        "index": 2,
+        "width": 3.861898820462863,
+        "length": 3.321232985598062,
+        "style": "tuft",
+        "layers": 1,
+        "moisture": 0.8,
+        "completeStrands": 4,
+        "cards": 4
+      },
+      {
+        "rock": "V5 / route chamber 4 bank",
+        "index": 2,
+        "width": 3.064179967210362,
+        "length": 2.635194771800911,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.8,
+        "completeStrands": 3,
+        "cards": 3
+      },
+      {
+        "rock": "V5 / route chamber 5 ceiling",
+        "index": 1,
+        "width": 5.773945124065674,
+        "length": 4.965592806696479,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.8,
+        "completeStrands": 3,
+        "cards": 3
+      },
+      {
+        "rock": "Vault / left ceiling",
+        "index": 0,
+        "width": 3.2637307201694448,
+        "length": 2.8068084193457223,
+        "style": "cascade",
+        "layers": 1,
+        "moisture": 0.55,
+        "completeStrands": 7,
+        "cards": 7
+      },
+      {
+        "rock": "Vault / left ceiling",
+        "index": 1,
+        "width": 2.687427749353401,
+        "length": 2.3111878644439248,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.55,
+        "completeStrands": 3,
+        "cards": 3
+      },
+      {
+        "rock": "Vault / right ceiling",
+        "index": 0,
+        "width": 2.9654876326896638,
+        "length": 2.5503193641131108,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.55,
+        "completeStrands": 3,
+        "cards": 3
+      },
+      {
+        "rock": "Vault / right ceiling",
+        "index": 1,
+        "width": 4.536432001080545,
+        "length": 3.9013315209292685,
+        "style": "sparse",
+        "layers": 1,
+        "moisture": 0.55,
+        "completeStrands": 3,
+        "cards": 3
+      }
+    ],
+    "cards": 36,
+    "triangles": 648,
+    "texture": "asset-generators/river-background/dream-candidate/textures/hanging-moss-soft-strands-v5.png",
+    "textureSha256": "a9b2e671f1cd3596f4dc49056bc7f76dadd7e77834ba929e7cd61a7d3c8779db",
+    "construction": "shared moisture patches; geometry roots; complete strands; uniform scale",
+    "spriteBounds": [
+      [
+        0.00959409594095941,
+        0.15571955719557196,
+        0.10172413793103448,
+        0.9241379310344827
+      ],
+      [
+        0.16236162361623616,
+        0.2811808118081181,
+        0.12241379310344827,
+        0.6413793103448275
+      ],
+      [
+        0.2900369003690037,
+        0.4398523985239852,
+        0.1060344827586207,
+        0.8956896551724138
+      ],
+      [
+        0.44649446494464945,
+        0.5601476014760147,
+        0.1336206896551724,
+        0.6275862068965518
+      ],
+      [
+        0.5653136531365314,
+        0.718819188191882,
+        0.10689655172413794,
+        0.9396551724137931
+      ],
+      [
+        0.7247232472324723,
+        0.8472324723247232,
+        0.1206896551724138,
+        0.6422413793103449
+      ],
+      [
+        0.8568265682656827,
+        0.9911439114391144,
+        0.1103448275862069,
+        0.7844827586206896
+      ]
+    ],
+    "spriteBorderAlpha": [
+      0.007843137718737125,
+      0.007843137718737125,
+      0.007843137718737125,
+      0.007843137718737125,
+      0.02352941408753395,
+      0.011764707043766975,
+      0.007843137718737125
+    ],
+    "detail": "soft contrast; mixed intermediate lengths; complete exposed crowns and tips"
+  },
+  "masses": [
+    {
+      "name": "V5 / red terraced bank",
+      "group": "red",
+      "attachment": "floor",
+      "boundsXZ": [
+        0.9159649122807014,
+        10.430706311232626,
+        -30.234934719902835,
+        -5.977177015333233
+      ],
+      "depth": 34,
+      "recipe": "red"
+    },
+    {
+      "name": "V5 / cyan twin ridge",
+      "group": "cyan",
+      "attachment": "floor",
+      "boundsXZ": [
+        -0.5211961722488052,
+        12.87688995215311,
+        -48.499091392136016,
+        -0.1542667375132849
+      ],
+      "depth": 84,
+      "recipe": "cyan"
+    },
+    {
+      "name": "V5 / green ceiling buttress",
+      "group": "green",
+      "attachment": "ceiling",
+      "boundsXZ": [
+        10.984499886078831,
+        23.59386420596947,
+        -12.68819113405192,
+        64.94422119325945
+      ],
+      "depth": 82,
+      "recipe": "green"
+    },
+    {
+      "name": "V5 / orange riverbank",
+      "group": "orange",
+      "attachment": "floor",
+      "boundsXZ": [
+        12.527174755069492,
+        20.429248120300752,
+        -30.234934719902835,
+        -8.636665401548504
+      ],
+      "depth": 34,
+      "recipe": "orange"
+    },
+    {
+      "name": "V5 / route chamber 1 bank",
+      "group": null,
+      "attachment": "floor",
+      "boundsXZ": [
+        26.427261352539062,
+        34.46332931518555,
+        -35,
+        17.167165756225586
+      ],
+      "depth": 48.0,
+      "recipe": "orange"
+    },
+    {
+      "name": "V5 / route chamber 2 bank",
+      "group": null,
+      "attachment": "floor",
+      "boundsXZ": [
+        -8.498143196105957,
+        -0.4640733599662781,
+        -35,
+        16.19395637512207
+      ],
+      "depth": 42.0,
+      "recipe": "red"
+    },
+    {
+      "name": "V5 / route chamber 3 ceiling",
+      "group": null,
+      "attachment": "ceiling",
+      "boundsXZ": [
+        -6.058575630187988,
+        7.607141971588135,
+        11.469385147094727,
+        55
+      ],
+      "depth": 48.0,
+      "recipe": "green"
+    },
+    {
+      "name": "V5 / route chamber 4 bank",
+      "group": null,
+      "attachment": "floor",
+      "boundsXZ": [
+        30.65422248840332,
+        46.56795120239258,
+        -35,
+        34.24187088012695
+      ],
+      "depth": 45.0,
+      "recipe": "orange"
+    },
+    {
+      "name": "V5 / route chamber 5 ceiling",
+      "group": null,
+      "attachment": "ceiling",
+      "boundsXZ": [
+        3.8142776489257812,
+        21.745342254638672,
+        19.129825592041016,
+        55
+      ],
+      "depth": 54.0,
+      "recipe": "green"
+    }
+  ],
+  "refittedFrom": "asset-generators/river-background/dream-candidate/output-v5/river_dream.blend",
+  "growthVerification": {
+    "stoneAndLightsPreserved": true,
+    "deterministic": true,
+    "fixedScreenVinesRemoved": true,
+    "plantMeshes": 68
+  }
+}

@@ -76,6 +76,12 @@ A build keeps only the `scene.glb` of scenes registered levels name (`scenesInBu
 
 The `.blend` files are raws under `assets-src/`, gitignored like every raw; publish them to the release by hand when a scene is accepted, or the recipe of the dressing is lost with the machine.
 
+The Connected v5 background has a separate, fully committed authoring pipeline
+under `asset-generators/river-background`: its bootstrap and two v5 `.blend`
+masters, source textures, recipes and build metadata live in Git. Its runtime
+exports remain pinned release assets. Editing and rebuilding instructions are
+in [the v5 README](../../asset-generators/river-background/README.md).
+
 ## What Blender cannot carry
 
 - **Procedural materials.** glTF carries a Principled BSDF with image textures and nothing else; a Base Color wired to a noise, a colour ramp or a mix exports as a flat colour.
