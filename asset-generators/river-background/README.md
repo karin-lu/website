@@ -31,7 +31,6 @@ From the repository root:
 python -m venv rope/.venv
 # Windows:
 rope/.venv/Scripts/python -m pip install -r rope/tools/blender/requirements.txt
-rope/.venv/Scripts/python asset-generators/river-background/fetch_authoring.py
 rope/.venv/Scripts/python asset-generators/river-background/open_editor.py
 ```
 
@@ -39,10 +38,16 @@ On macOS/Linux use `rope/.venv/bin/python`. Set `BLENDER` to the executable or
 pass `--blender` to the launcher. Set `RIVER_PYTHON` to override the generator
 Python; the launcher defaults to the interpreter used to launch it.
 
-The authoring archive includes the current runtime master, the separate artist
-master, the packed bootstrap scene, build metadata and three source textures.
-It excludes historical scene backups, rock caches, logs and screenshots.
-The fetch refuses to overwrite any differing local artwork.
+Both accepted v5 Blender files are committed directly in this branch:
+
+- [Runtime master](dream-candidate/output-v5/river_dream.blend).
+- [Artist layer-editor master](dream-candidate/output-v5/river_dream_layer_editor.blend).
+
+Their textures are packed, so the launcher can open them after cloning.
+For procedural rebuilding, fetch the bootstrap scene, build metadata and loose
+source textures with `python asset-generators/river-background/fetch_authoring.py`.
+The release archive also retains copies of the accepted masters. The fetch
+refuses to overwrite any differing local artwork.
 
 Use the launcher after moving/cloning the checkout: it binds scene paths and
 Python to this checkout before registering the River sidebar. Old embedded
@@ -104,10 +109,12 @@ master, `--background` and `--python-exit-code 1`. They do not save over it.
 
 ## Storage and future updates
 
-Source code and the package manifest are in Git. Binary assets follow the
-repository's release-store convention. SHA-256 and byte counts are pinned in
-`rope/src/render3d/backgroundAssets.json`; downloads fail on mismatches.
-The archive and runtime files live in the fork's `blender-pipeline-v5-assets`
-release. A subsequent accepted export needs new release assets and updated pins
+Source code, the package manifest and both accepted v5 Blender masters are in
+Git. Runtime GLBs and images follow the repository's release-store convention.
+SHA-256 and byte counts are pinned in `rope/src/render3d/backgroundAssets.json`;
+downloads fail on mismatches. The supplemental authoring archive and runtime
+files live in the fork's `blender-pipeline-v5-assets` release. Commit changes to
+the accepted Blender masters directly. A subsequent accepted export needs new
+release assets and updated pins
 alongside `rope/public/backgrounds/river-dream-v5/package.json`. Do not replace
 bytes behind existing pins. Generated local output remains ignored.

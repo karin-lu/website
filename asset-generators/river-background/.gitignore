@@ -10,3 +10,9 @@ staging-check/
 dream-candidate/output*/
 dream-candidate/textures/
 dream-candidate/*-report*.json
+
+# Accepted v5 Blender masters are source artifacts tracked in Git.
+!dream-candidate/output-v5/
+dream-candidate/output-v5/*
+!dream-candidate/output-v5/river_dream.blend
+!dream-candidate/output-v5/river_dream_layer_editor.blend
