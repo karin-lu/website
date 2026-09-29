@@ -26,7 +26,7 @@ import { render, renderBall } from "./render/renderer";
 import { SparkSystem } from "./render/sparks";
 import { DebrisSystem } from "./render/debris";
 import { ChainRetract } from "./render/chainRetract";
-import { NO_ORBIT, type CameraOrbit } from "./render3d/space";
+import { NO_ORBIT, type CameraOrbit, type ViewPose } from "./render3d/space";
 import { Scene3D } from "./render3d/scene";
 import { assetsSettled, pendingAssets } from "./render3d/assets";
 import { BallLevel } from "./level/ballLevel";
@@ -36,6 +36,7 @@ import { recordingDeserializer, type Recording } from "./sim/trace";
 import { BALL_ZOOM, GRAPPLE_ZOOM, type Camera } from "./render/camera";
 import { fitCanvas, LETTERBOX_COLOR, VIEW_HEIGHT, VIEW_WIDTH } from "./render/viewport";
 import { Vec2 } from "./engine/vec2";
+import { CameraController } from "./render/cameraController";
 
 interface ShotLogEntry {
   level: string;
@@ -126,12 +127,37 @@ const orbit = ((): CameraOrbit => {
   }
   return { yaw: (yaw * Math.PI) / 180, pitch: (pitch * Math.PI) / 180 };
 })();
+// The editor's free camera, for checking a package through the same integration
+// path: X,Y,Z in Three coordinates, yaw/pitch in degrees, half-height, FOV.
+const freePose = ((): ViewPose | null => {
+  const raw = q.get("viewPose");
+  if (raw === null) return null;
+  const values = raw.split(",").map(Number);
+  if (values.length !== 7 || !values.every(Number.isFinite) || values[5] <= 0 || values[6] <= 0 || values[6] >= 180) {
+    console.error(`viewPose=${raw} is not X,Y,Z,YAW,PITCH,HALFHEIGHT,FOV; using normal camera`);
+    return null;
+  }
+  return {
+    target: { x: values[0], y: values[1], z: values[2] },
+    yaw: values[3] * Math.PI / 180, pitch: values[4] * Math.PI / 180,
+    halfHeight: values[5], fovYDeg: values[6],
+  };
+})();
 const camera: Camera = {
   position: pinned ?? level.cameraRenderPosition(1),
   zoom: Number(q.get("zoom") ?? (isBall ? BALL_ZOOM : GRAPPLE_ZOOM)),
   viewportWidth: VIEW_WIDTH,
   viewportHeight: VIEW_HEIGHT,
 };
+// Opt-in gameplay framing for route/background verification. Default grabs
+// retain their historical avatar-centred/pinned camera. A replay samples the
+// render-side controller at 60 Hz, matching its frame-rate-independent spring.
+const gameCamera = q.has("gameCamera") ? new CameraController() : null;
+const baseZoom = isBall ? BALL_ZOOM : GRAPPLE_ZOOM;
+const updateGameCamera = (dt: number): void => {
+  gameCamera?.update(camera, dt, level.cameraRenderPosition(1), level.cameraRules, baseZoom, level.cameraHang);
+};
+updateGameCamera(0);
 
 // Diagnostics on: shader compile failures reported into the page log, and a
 // readable drawing buffer so the tiles below and the blank-frame check can read
@@ -139,6 +165,7 @@ const camera: Camera = {
 const scene3d = use3d ? new Scene3D(sceneCanvas, { diagnostics: true }) : null;
 if (scene3d) {
   scene3d.resize(view);
+  scene3d.setViewPose(freePose);
   scene3d.setLevel(level);
   // Props and authored texture maps arrive asynchronously, and in the GAME that
   // is the point - the placeholder box and the generated surface cover the gap.
@@ -146,6 +173,9 @@ if (scene3d) {
   // arrived makes the same command produce different images on different runs,
   // so it is evidence of nothing. Wait for the scene to be dressed, then draw.
   await settleAssets();
+  // Lazy shader probes still need complete geometry. They skip prewarm, which
+  // normally waits for the separate background package before drawing.
+  await scene3d.backgroundSettled();
   // The game's own prewarm before the first grab (see `Scene3D.prewarm`): every
   // program compiled and link-checked, so one belonging to something off screen
   // this frame still reports its errors here rather than whenever the camera
@@ -193,6 +223,7 @@ let simFrame = 0;
 const advanceTo = (target: number): void => {
   for (; simFrame < target; simFrame++) {
     level.physicsProcess(de(rec.frames[simFrame]!), 1 / 60);
+    updateGameCamera(1 / 60);
     sparks.ingest(level.sparkEvents);
     sparks.advance(1 / 60);
     debris.ingest(level.breakEvents);
@@ -222,6 +253,13 @@ if (dump) {
   drawFilmstrip();
 }
 
+if (scene3d && q.has("backgroundDiagnostics")) {
+  console.log(`background ${JSON.stringify({
+    ...scene3d.backgroundStatus(), ...scene3d.renderStats(),
+    gameplayCamera: { position: [camera.position.x, camera.position.y], zoom: camera.zoom },
+    ...(freePose ? { viewPose: freePose } : {}),
+  })}`);
+}
 reportErrors();
 // Polled by the screenshotting harness over CDP: the page is done drawing.
 (window as unknown as { shotReady: boolean }).shotReady = true;
@@ -261,7 +299,8 @@ function chainState(): Record<string, unknown> {
 // frame is drawn at the sim state exactly, never interpolated, so two grabs of
 // the same frame are the same image.
 function drawFrame(frame: number): void {
-  camera.position = pinned ?? level.cameraRenderPosition(1);
+  if (pinned || !gameCamera) camera.position = pinned ?? level.cameraRenderPosition(1);
+  if (q.has("zoom")) camera.zoom = Number(q.get("zoom"));
   if (scene3d) {
     // Freeze the wall clock, and advance it with the SIM from the first frame
     // drawn. The flicker and the water are the parts of the 3D scene driven by

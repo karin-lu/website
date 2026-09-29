@@ -1,4 +1,11 @@
 node_modules
+artifacts/
+public/backgrounds/**/*.glb
+public/backgrounds/**/*.png
+public/backgrounds/**/.export-*/
+public/backgrounds/**/export_report.json
+public/backgrounds/**/optimization.json
+public/backgrounds/**/verification.json
 dist
 playtests/bundles/
 # Production runs pulled by `cli pull`; the store on the server is the source.

@@ -1,5 +1,32 @@
 # Debugging rendering
 
+On Windows, the screenshot runner terminates its own Chrome process tree with
+`taskkill /PID ... /T /F`, waits briefly for Chrome to exit, and retries profile
+removal. A busy temporary profile produces a warning rather than replacing the
+original page error or invalidating a successful capture. Killing only Chrome's
+parent left helper processes holding files and caused `EBUSY` during cleanup.
+The opt-in [River Dream Loop preview](river-dream-preview.md) uses the same
+background selection in playable pages and `shot.html`.
+
+## Normal play and screenshots must read the same level
+
+On 2026-09-28 the river package passed a shot capture while the linked playable
+page still showed its old backing wall. The shot carried current level data in
+a bundle. Normal play imported the registry's cached JSON: `/api/levels/ball`
+contained `backgroundPackage`, while `/levels/ball.json?import` omitted it.
+A timestamp query on the JSON import immediately returned the new field.
+
+The level API and its disk watcher already invalidated Vite's cache, but they
+passed native Windows paths with backslashes. Vite's module graph uses normalized
+paths with forward slashes and does not normalize `getModulesByFile` arguments.
+The invalidation found zero modules. `invalidateLevelFile` now normalizes the
+lookup for every client/SSR environment; the regression covers those cache keys
+and package propagation through normal play and editor test construction.
+
+Check the playable page with `backgroundDiagnostics=1` and its captured console,
+as well as bundle screenshots. `window.__background` exposes current status.
+The river should report `ready`, two layers and hidden body 205 after warm-up.
+
 The physics loop above has a section of discipline because every rule in it was paid for by a debugging day.
 The renderer now has one for the same reason: the 2026-08-04 water sessions violated all six of these, and each cost hours.
 

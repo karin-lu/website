@@ -2536,6 +2536,9 @@ export interface LevelData {
   // absent means the defaults, so the 2D renderer and every existing level are
   // untouched by it.
   environment?: EnvironmentData;
+  // URL of a versioned scenery package. Its manifest/geometry uses Three world
+  // coordinates in metres, so this reference crosses pixel scaling verbatim.
+  backgroundPackage?: string;
   // The 3D camera's lens and depth (see LevelCameraData). Render-only like the
   // environment, and absent means the camera every level had before it.
   camera?: LevelCameraData;
@@ -2680,6 +2683,7 @@ export interface RawLevelData {
   chains?: (ChainData | LegacyChainData)[];
   vines?: VineData[];
   environment?: EnvironmentData;
+  backgroundPackage?: string;
   camera?: LevelCameraData;
   scene?: string;
 }
@@ -3691,6 +3695,7 @@ export function scaleLevelData(rawData: RawLevelData, factor: number): LevelData
     // is copied rather than scaled - but copied, not shared, since everything
     // else here hands the caller a fresh object.
     ...(data.environment ? { environment: { ...data.environment } } : {}),
+    ...(data.backgroundPackage !== undefined ? { backgroundPackage: data.backgroundPackage } : {}),
     // The focal length is a lens property in millimetres and crosses untouched;
     // the offset is a length in the level and scales like one.
     ...(data.camera

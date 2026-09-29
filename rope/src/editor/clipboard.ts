@@ -44,7 +44,7 @@ export const CLIPBOARD_VERSION = 1;
 
 // A fragment of a level, in on-disk pixels. Every field is the one `LevelData`
 // has, so the payload is a level file with the level-wide blocks left out.
-export interface ClipboardPayload extends Omit<LevelData, "player" | "meta" | "environment"> {
+export interface ClipboardPayload extends Omit<LevelData, "player" | "meta" | "environment" | "backgroundPackage"> {
   [CLIPBOARD_KEY]: number;
 }
 
@@ -121,6 +121,6 @@ export function readClipboard(text: string): RawLevelData | null {
   const payload = parsed as Record<string, unknown>;
   if (payload[CLIPBOARD_KEY] !== CLIPBOARD_VERSION) return null;
   if (!Array.isArray(payload.bodies)) return null;
-  const { [CLIPBOARD_KEY]: _v, player: _spawn, meta: _meta, environment: _env, camera: _camera, ...rest } = payload;
+  const { [CLIPBOARD_KEY]: _v, player: _spawn, meta: _meta, environment: _env, camera: _camera, backgroundPackage: _background, ...rest } = payload;
   return { ...rest, player: NO_SPAWN } as RawLevelData;
 }

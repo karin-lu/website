@@ -6,21 +6,24 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   watch,
   writeFileSync,
 } from "node:fs";
 import { execSync } from "node:child_process";
 import { gunzipSync } from "node:zlib";
-import { join, resolve } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { levelFileHash, treeStamp, type TreeStamp } from "./src/sim/treeStamp";
 import { DEFAULT_LEVEL, LEVELS } from "./src/level/registry";
 import type { RawLevelData } from "./src/level/levelFormat";
 import { levelSceneName, levelStoredFiles } from "./src/render3d/levelAssets";
+import { backgroundStoredFiles, parseBackgroundManifest, type BackgroundManifest } from "./src/render3d/backgroundManifest";
 import { GENERATED_MESH_FILE, GENERATED_ROOT } from "./src/render3d/generated";
 import { SCENE_MESH_FILE, SCENES_DIR } from "./src/render3d/scenes";
 import { generatorService } from "./src/server/generators/service";
 import { imageService } from "./src/server/images";
 import { sceneService } from "./src/server/scenes";
+import { invalidateLevelFile } from "./src/server/levelInvalidation";
 
 // The identity of the SOURCE this server is serving, exposed to the app as
 // `virtual:tree-stamp` and stamped into every exported bundle.
@@ -163,11 +166,7 @@ function levelApi(): Plugin {
       // load, which is the contract everywhere else here: a level is read once,
       // when the scene is built.
       const invalidate = (file: string) => {
-        for (const env of Object.values(server.environments)) {
-          for (const mod of env.moduleGraph.getModulesByFile(file) ?? []) {
-            env.moduleGraph.invalidateModule(mod);
-          }
-        }
+        invalidateLevelFile(server, file);
       };
 
       // The API is not the only way a level is written. A hand edit, a `git
@@ -351,6 +350,36 @@ function levelData(spec: { data: RawLevelData; file?: string }): RawLevelData {
   }
 }
 
+// Resolve local background manifests at first paint, so their GLBs/plate start
+// fetching alongside normal props. Remote packages can still load at runtime.
+function storedFiles(spec: { data: RawLevelData; file?: string; controller?: string }) {
+  const data = levelData(spec);
+  if (!data.backgroundPackage) return levelStoredFiles(data, spec.controller);
+  const publicRoot = resolve(import.meta.dirname, "public");
+  const localFile = (file: string): string | null => {
+    const url = new URL(file, "http://local.invalid/");
+    if (url.origin !== "http://local.invalid") return null;
+    const path = resolve(publicRoot, decodeURIComponent(url.pathname).replace(/^\/+/, ""));
+    return path.startsWith(publicRoot + sep) ? path : null;
+  };
+  let manifest: BackgroundManifest | undefined;
+  try {
+    const path = localFile(data.backgroundPackage);
+    if (path) manifest = parseBackgroundManifest(JSON.parse(readFileSync(path, "utf8")));
+  } catch (error) {
+    console.warn(`[background preload] ${data.backgroundPackage}: ${error instanceof Error ? error.message : error}`);
+  }
+  const named = new Set(manifest ? backgroundStoredFiles(data.backgroundPackage, manifest).map((f) => f.file) : [data.backgroundPackage]);
+  return levelStoredFiles(data, spec.controller, manifest).map((file) => {
+    if (!named.has(file.file) || file.bytes > 0) return file;
+    try {
+      const path = localFile(file.file);
+      if (path) return { ...file, bytes: statSync(path).size };
+    } catch { /* A missing file falls back through the runtime loader. */ }
+    return file;
+  });
+}
+
 function storeScript(): Plugin {
   // One table of files for every level, since levels share surfaces and this is
   // markup that ships on every page load. ~2 KB gzipped for the whole registry.
@@ -379,7 +408,7 @@ function storeScript(): Plugin {
         b: spec.controller === "ball" ? 1 : 0,
         t: meta?.title ?? id,
         k: !listed ? 0 : meta?.intro ? 2 : 1,
-        i: levelStoredFiles(levelData(spec), spec.controller).map((f) => {
+        i: storedFiles(spec).map((f) => {
           let at = index.get(f.file);
           if (at === undefined) {
             at = files.push([f.file, f.bytes]) - 1;

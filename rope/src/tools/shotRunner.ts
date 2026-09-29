@@ -47,6 +47,9 @@ export interface GrabRequest {
   // kill the run and print what it did say, never stall. It is the ONLY ceiling
   // now that virtual time is gone (see `Emulation.setVirtualTimePolicy` below).
   timeoutMs: number;
+  // Other real pages can use the same gated capture without pretending to be
+  // shot.html. Omitted requests retain the standard shotReady gate.
+  readyExpression?: string;
 }
 
 export interface GrabResult {
@@ -228,7 +231,7 @@ async function grabWith(
     // it to be worth a class of hang that is invisible from here.
     await cdp.send("Page.navigate", { url: req.url });
 
-    const ready = await pollReady(cdp, started + req.timeoutMs);
+    const ready = await pollReady(cdp, started + req.timeoutMs, req.readyExpression);
     // The page's own buffer, read whether or not it ever became ready: a partial
     // log is the whole point of the timeout path.
     const raw = (await cdp.send("Runtime.evaluate", {
@@ -244,7 +247,7 @@ async function grabWith(
 
     if (!ready) {
       throw new PageNotReady(
-        `page never set window.shotReady within ${req.timeoutMs}ms`,
+        `page never satisfied ${req.readyExpression ?? "window.shotReady"} within ${req.timeoutMs}ms`,
         merged,
       );
     }
@@ -262,13 +265,31 @@ async function grabWith(
     if (child?.pid) {
       // Negative pid: the process group. chromium spawns a tree of helpers and
       // killing the parent alone leaves them holding the profile directory.
-      try {
-        process.kill(-child.pid, "SIGKILL");
-      } catch {
-        child.kill("SIGKILL");
+      const chrome = child;
+      const exited = new Promise<void>((resolve) => {
+        if (chrome.exitCode !== null || chrome.signalCode !== null) return resolve();
+        const timeout = setTimeout(resolve, 1500);
+        chrome.once("exit", () => { clearTimeout(timeout); resolve(); });
+      });
+      if (process.platform === "win32") {
+        // Windows has no negative-pid process groups. Terminate only this
+        // capture's Chrome tree, then let profile handles close before removal.
+        spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+      } else {
+        try {
+          process.kill(-child.pid, "SIGKILL");
+        } catch {
+          child.kill("SIGKILL");
+        }
       }
+      await exited;
     }
-    rmSync(profile, { recursive: true, force: true });
+    try {
+      rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } catch (err) {
+      // Cleanup must never replace the page error (or discard a valid PNG).
+      console.warn(`[shot] could not remove temporary Chrome profile ${profile}: ${String(err)}`);
+    }
   }
 }
 
@@ -299,8 +320,15 @@ async function devToolsPort(
       throw new Error(`chromium exited (${child.exitCode}): ${stderr().trim().slice(-500)}`);
     }
     if (existsSync(file)) {
-      const port = Number(readFileSync(file, "utf8").split("\n")[0]);
-      if (Number.isFinite(port) && port > 0) return port;
+      try {
+        const port = Number(readFileSync(file, "utf8").split("\n")[0]);
+        if (Number.isFinite(port) && port > 0) return port;
+      } catch (error) {
+        // Windows can see the file before Chrome releases its write lock.
+        // Retry these startup races within the existing bounded deadline.
+        const code = (error as NodeJS.ErrnoException).code;
+        if (code !== "EBUSY" && code !== "ENOENT") throw error;
+      }
     }
     await sleep(25);
   }
@@ -309,10 +337,10 @@ async function devToolsPort(
 
 // The whole point of the runner: ask the page whether it is done, rather than
 // guessing how long being done takes.
-async function pollReady(cdp: CDP, deadline: number): Promise<boolean> {
+async function pollReady(cdp: CDP, deadline: number, expression = "window.shotReady === true"): Promise<boolean> {
   while (Date.now() < deadline) {
     const r = (await cdp.send("Runtime.evaluate", {
-      expression: "window.shotReady === true",
+      expression,
       returnByValue: true,
     })) as { result?: { value?: boolean } };
     if (r.result?.value === true) return true;

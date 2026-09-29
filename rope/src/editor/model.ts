@@ -1065,6 +1065,7 @@ export interface EdModel {
   // editor: the scene is rebuilt from the model, so it goes on looking however
   // the model says, and the loss only shows up next time the game loads the file.
   environment: EnvironmentData | undefined;
+  backgroundPackage?: string;
   // The 3D camera's lens and z offset (`LevelCameraData`), in metres like the
   // rest of the model. Carried for the environment's reason: a block the editor
   // does not write back is a block it deletes 750 ms after the level is opened.
@@ -2224,6 +2225,7 @@ function lightItem(
     // Copied rather than shared, since everything else here hands the caller a
     // fresh object, and undo snapshots this by value.
     environment: data.environment ? { ...data.environment } : undefined,
+    backgroundPackage: data.backgroundPackage,
     camera: data.camera ? { ...data.camera } : undefined,
     meta: { ...data.meta },
     scene: data.scene ?? "",
@@ -2857,6 +2859,7 @@ export function toLevelData(model: EdModel, itemOf?: Map<SceneObjectData, number
     // does not support it", it is the editor DELETING a level's lighting the
     // first time the file is opened.
     ...(model.environment ? { environment: { ...model.environment } } : {}),
+    ...(model.backgroundPackage !== undefined ? { backgroundPackage: model.backgroundPackage } : {}),
     ...(model.camera ? { camera: { ...model.camera } } : {}),
     ...(model.scene ? { scene: model.scene } : {}),
     ...(notes.length ? { notes } : {}),

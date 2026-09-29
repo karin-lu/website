@@ -702,6 +702,12 @@ const perf = new PerfProbe();
 // A GETTER, because the level is replaced on every reset and a captured
 // reference would be of a run that has ended.
 Object.defineProperty(window, "__level", { get: () => level, configurable: true });
+// Read-only scenery diagnostics on the page the player actually opens. A shot
+// carrying its own level data cannot detect a stale registry module here.
+Object.defineProperty(window, "__background", {
+  get: () => scene3d?.backgroundStatus() ?? null,
+  configurable: true,
+});
 // The visual chain drape may not cost gameplay a frame: past this much of a
 // step it stops iterating and the next step picks up the slack (literally).
 // Half a millisecond is 3% of the 60 Hz step and several times what the drape
@@ -1319,6 +1325,9 @@ async function boot(): Promise<void> {
     console.log(
       `[prewarm] ${warmed.programs} programs, ${warmed.textures} textures in ${warmed.ms.toFixed(0)} ms`,
     );
+    if (params.has("backgroundDiagnostics")) {
+      console.log(`background ${JSON.stringify(scene3d.backgroundStatus())}`);
+    }
   }
   // Everything is loaded, warm and drawn, so the level STARTS. There is nothing
   // else to wait for: choosing it on the level select was the press (Tris,

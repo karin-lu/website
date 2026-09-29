@@ -14,10 +14,12 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { GENERATED_ASSETS } from "../src/render3d/generatedMeta";
+import { fetchV5Assets } from "./fetch-v5-assets";
 import { assetName, assetUrl, levelsGeneratedKeys, sha256, storedAssets } from "./assetStore";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const PUBLIC_DIR = join(ROOT, "public");
+await fetchV5Assets();
 
 // A generated mesh a level names and the store does not hold would ship as its
 // stand-in - the build succeeds and the level is quietly not the one that was

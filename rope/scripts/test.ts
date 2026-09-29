@@ -32,6 +32,8 @@ const playtests = readdirSync(join(ROOT, "playtests"))
 
 const steps: Step[] = [
   { name: "typecheck", cmd: ["bunx", "tsc", "--noEmit"] },
+  { name: "level invalidation", cmd: ["bun", "run", "scripts/test-level-invalidation.ts"] },
+  { name: "background packages", cmd: ["bun", "run", "scripts/test-background-package.ts"] },
   { name: "dmath", cmd: ["bun", "run", CLI, "dmath"] },
   { name: "selftest", cmd: ["bun", "run", CLI, "selftest"] },
   { name: "contacts", cmd: ["bun", "run", CLI, "contacts"] },

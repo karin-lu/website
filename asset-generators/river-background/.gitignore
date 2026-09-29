@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.log
+*.blend*
+*.zip
+.exports/
+cache*/
+verification/
+staging-check/
+dream-candidate/output*/
+dream-candidate/textures/
+dream-candidate/*-report*.json

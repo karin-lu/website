@@ -1084,6 +1084,7 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
     // Mutated in place by the environment panel exactly as `cam` and `light`
     // are, so a snapshot sharing it would alias the state it restores.
     environment: m.environment ? { ...m.environment } : undefined,
+    backgroundPackage: m.backgroundPackage,
     // Mutated in place by the camera fields, for the same reason.
     camera: m.camera ? { ...m.camera } : undefined,
     // Mutated in place by the Level panel, exactly as the environment block is

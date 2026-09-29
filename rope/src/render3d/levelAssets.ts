@@ -27,6 +27,7 @@ import { GENERATED_ASSETS, generatedMeta } from "./generatedMeta";
 import { IMAGE_ASSETS } from "./images";
 import { SCENE_ASSETS, sceneFile } from "./scenes";
 import { sceneMeta } from "./sceneMeta";
+import { backgroundStoredFiles, type BackgroundManifest } from "./backgroundManifest";
 import {
   BALL_MESH,
   emissiveMapName,
@@ -110,7 +111,7 @@ export function levelImageKeys(raw: RawLevelData): string[] {
 // order it will request them - the sky and the avatar first, then the bodies in
 // authored order - so a connection that cannot carry all of it at once carries
 // the most visible parts first.
-export function levelStoredFiles(raw: RawLevelData, controller?: string): StoredFile[] {
+export function levelStoredFiles(raw: RawLevelData, controller?: string, background?: BackgroundManifest): StoredFile[] {
   // Normalised, not scaled: the units are irrelevant here, but a level still in
   // the retired flat form only grows its geometry objects (and so its texture
   // names) on the way through this gate. `LEVEL_2` is one - it comes from the
@@ -132,6 +133,12 @@ export function levelStoredFiles(raw: RawLevelData, controller?: string): Stored
     const asset = TEXTURE_ASSETS[surfaceName(name)];
     if (asset) for (const map of textureMaps(asset)) add(map);
   };
+
+  if (data.backgroundPackage) {
+    const files = background ? backgroundStoredFiles(data.backgroundPackage, background) :
+      [{ file: data.backgroundPackage, bytes: 0 }];
+    for (const file of files) add(file);
+  }
 
   if (data.environment?.hdri) add(HDRI_ASSETS[data.environment.hdri]);
   // Every 3D page builds a `ChainLayer`, ball level or not, and a chain link is

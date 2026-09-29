@@ -23,6 +23,7 @@
     "scene:guide": "bun run scripts/scene-guide.ts",
     "assets:paint": "bun run scripts/paint-textures.ts",
     "assets:fetch": "bun run scripts/fetch-assets.ts",
+    "assets:fetch-v5": "bun run scripts/fetch-v5-assets.ts",
     "assets:credits": "bun run scripts/credits.ts",
     "assets:rocks": "bun run scripts/generate-rocks.ts",
     "assets:rock": "bun run scripts/rock-asset.ts",

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "colorSpace": "srgb-display",
+  "camera": {
+    "fovYDeg": 19.455157102803206,
+    "distance": 10.2375,
+    "origin": [
+      10.85,
+      -8
+    ],
+    "zoomResponse": 0
+  },
+  "layers": [
+    {
+      "id": "near",
+      "file": "near-224cefba65f0.glb",
+      "bytes": 4046184,
+      "sha256": "224cefba65f0034346391c60f77dd19b9d66275ca42500ada59101787ac3c0f8"
+    },
+    {
+      "id": "far",
+      "file": "far-36c3d0725d75.glb",
+      "bytes": 123568,
+      "sha256": "36c3d0725d75d933f057e8bf543553871b7fbd83fa303b0ebee37f21076b8abb"
+    }
+  ],
+  "backdrop": {
+    "worldWidth": 10,
+    "worldHeight": 7,
+    "origin": [
+      10.85,
+      -8
+    ],
+    "pan": 0.02,
+    "file": "backdrop-e4109729f90c.png",
+    "bytes": 2785622,
+    "sha256": "e4109729f90cdce0413eef41cd1bcce6d45ff894cd19231799f3b99d129451d2"
+  },
+  "hideBodyIds": [],
+  "foliageFog": {
+    "color": [
+      0.028,
+      0.064,
+      0.092
+    ],
+    "near": 20,
+    "far": 190
+  },
+  "replaceSceneScenery": true
+}

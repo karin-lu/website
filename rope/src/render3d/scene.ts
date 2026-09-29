@@ -59,6 +59,7 @@ import {
 } from "./space";
 import { updateWater, waterTextures } from "./water";
 import { beltRenderTime } from "../render/beltTread";
+import { BackgroundPackage } from "./backgroundPackage";
 
 // What the 3D renderer needs of a level. Deliberately structural rather than
 // `Level | BallLevel`: the editor drives one of these from a model that is
@@ -165,6 +166,8 @@ export class Scene3D {
   private readonly poseCentre = { x: 0, y: 0 };
   private readonly renderer: THREE.WebGLRenderer;
   private env: Environment;
+  private readonly background = new BackgroundPackage();
+  private readonly authoredVisuals: BodyVisual[] = [];
   // What the current `Environment` was built from. The editor rebuilds the whole
   // scene on every model revision - every drag - and an environment is the one
   // part of it whose construction is not free: PMREM convolves the generated sky
@@ -268,6 +271,14 @@ export class Scene3D {
     return this.gpuTimer?.lastMs ?? null;
   }
 
+  backgroundStatus(): ReturnType<BackgroundPackage["status"]> {
+    return this.background.status();
+  }
+
+  async backgroundSettled(): Promise<void> {
+    await this.background.wait();
+  }
+
   // Build the scene for a level. Called once per level instance (a reset builds
   // a new level, so it builds a new scene): every static extrusion is created
   // here and nothing but transforms is touched per frame.
@@ -275,6 +286,12 @@ export class Scene3D {
     this.clearLevel();
     this.setEnvironment(level.visualSource.data.environment);
     this.lens = lensOf(level.visualSource.data.camera);
+    // An explicit preview URL selects the isolated candidate for both the
+    // playable game and shot.html. The level and its saved data stay intact.
+    const previewBackground = new URLSearchParams(location.search).get("background");
+    this.background.setPackage(previewBackground === "river-dream-v5"
+      ? `/backgrounds/${previewBackground}/package.json`
+      : level.visualSource.data.backgroundPackage);
     // Authored bodies FIRST, and in authored order, because the light budgets
     // are spent in that order: a level whose lamps are drawn in a different
     // order from the one it was authored in is a level whose lamps go out
@@ -289,6 +306,7 @@ export class Scene3D {
       // waking light drives (see `BodyVisual`'s `instance`), so a rebuild of
       // the same level (every editor revision) reuses the same cache entries.
       const visual = new BodyVisual(built.body, built, this.lights, `b${index}`);
+      this.authoredVisuals.push(visual);
       this.scene.add(visual.root);
       if (built.body) this.bodies.set(built.body, visual);
       else this.standing.push(visual);
@@ -435,9 +453,11 @@ export class Scene3D {
     camera: Camera,
   ): Promise<{ ms: number; programs: number; textures: number }> {
     const t0 = performance.now();
+    await this.background.wait();
     // As a frame would: reconcile the visuals, settle the camera and the
     // environment, size the shadow maps.
     this.render(level, camera, 1);
+    await this.background.prewarm(this.renderer);
 
     const materials = this.renderer.compile(this.scene, this.camera);
     await this.renderer.compileAsync(this.scene, this.camera);
@@ -456,6 +476,7 @@ export class Scene3D {
 
     for (const texture of this.sampledTextures()) this.renderer.initTexture(texture);
 
+    this.background.warmDraw(this.renderer);
     this.drawEverythingOnce();
 
     for (const material of materials) {
@@ -600,7 +621,7 @@ export class Scene3D {
       o.frustumCulled = false;
     });
     try {
-      this.renderer.render(this.scene, this.camera);
+      this.background.render(this.renderer, this.scene, this.camera);
     } finally {
       for (const put of restore) put();
     }
@@ -1100,8 +1121,18 @@ export class Scene3D {
     // created, and it costs a traverse only while something is selected.
     this.syncHighlight();
 
+    // Visual suppression only: the body's engine object remains untouched.
+    // Until all package files decode successfully the original scenery stays.
+    const hidden = this.background.ready ? this.background.hideBodyIds : [];
+    if (this.dressing) this.dressing.root.visible = !this.background.replaceSceneScenery;
+    for (let i = 0; i < this.authoredVisuals.length; i++) {
+      this.authoredVisuals[i].root.visible = !hidden.includes(i);
+    }
+    // Free editor poses use their target; game travel uses the 2D camera.
+    this.background.sync(centre === camera.position ? camera : { ...camera, position: new Vec2(centre.x, centre.y) });
+
     this.gpuTimer?.begin();
-    this.renderer.render(this.scene, this.camera);
+    this.background.render(this.renderer, this.scene, this.camera);
     this.gpuTimer?.end();
   }
 
@@ -1116,6 +1147,7 @@ export class Scene3D {
 
   private clearLevel(): void {
     this.clearHighlight();
+    this.authoredVisuals.length = 0;
     for (const visual of this.bodies.values()) {
       this.scene.remove(visual.root);
       visual.dispose();
@@ -1150,6 +1182,7 @@ export class Scene3D {
     this.vines.dispose();
     this.lights.dispose();
     this.env.dispose();
+    this.background.dispose();
     this.renderer.dispose();
   }
 }
