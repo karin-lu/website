@@ -44,8 +44,10 @@ painted leaf texture and vertex colours, with smooth surface shading.
 Its centre is buried in the rock and the leaves sit over its shallow cap.
 The support shares one material, adds one draw per bush, and adds no leaf
 cards or collision. Blades rise over this cap while their stalks stay tucked in.
-Thirty percent of inner blades and the outer blades mix the existing ragged
-painted atlas cells; solid stem UVs remain intact. A lower alpha cutoff and
+All bush blades use the existing fuzzy painted leaf atlas, including the
+previous clump-atlas bush. Solid stem UVs remain intact. The backing is recessed
+farther into the host. Visible blade rows project onto its actual surface with
+6 mm clearance; stems stay concealed. A lower alpha cutoff and
 alpha-to-coverage preserve the softer painted silhouette edges.
 
 Moss edge cards are 6–12 cm tall, with irregular lean and overlapping placement

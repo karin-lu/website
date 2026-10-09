@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { curveIvyGeometry } from '../src/render3d/ivyGeometry';
 import { ivyHostSurface } from '../src/render3d/ivyGeometry';
 import { buildMossFringe } from '../src/render3d/mossFringe';
-import { buildBushSupport } from '../src/render3d/bushSupport';
+import { buildBushSupport, seatLeavesOverSupport } from '../src/render3d/bushSupport';
+import { VineSurface } from '../src/render3d/ivySurface';
 import assert from 'node:assert/strict';
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.decoder':MeshoptDecoder});
@@ -41,9 +42,18 @@ root.traverse(o=>{
   if (/^Ivy(Clumps)?$/.test(material.name)) {
     const host=ivyHostSurface(o);
     assert.ok(host, `the rock host is found through unnamed groups for ${o.parent!.parent!.name}`);
-    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host);
+    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host,true);
     const before = curved.getAttribute('position').count;
     const cushion = buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38'));
+    const seated=seatLeavesOverSupport(curved,cushion,o.matrixWorld);
+    const soup: number[]=[];
+    const p=new THREE.Vector3(), supportPosition=cushion.getAttribute('position');
+    for (let i=0;i<supportPosition.count;i++) p.fromBufferAttribute(supportPosition,i).applyMatrix4(o.matrixWorld).toArray(soup,soup.length);
+    const backingSurface=new VineSurface(soup);
+    for (let card=0;card<curved.userData.ivyLeafCards;card+=7) for (const vertex of [6,7,8,10,13]) {
+      p.fromBufferAttribute(seated.getAttribute('position'),card*15+vertex).applyMatrix4(o.matrixWorld);
+      assert.ok(backingSurface.nearest(p)!.signed >= .0058, 'visible leaves clear the backing surface');
+    }
     assert.ok(cushion.userData.bushSupportLobes > 0, 'every rock bush receives solid support');
     assert.equal(cushion.userData.bushSupportLobes, 1, 'the support is a fused surface instead of separate lobes');
     assert.equal(cushion.userData.continuousBushSupport, true);

@@ -5,7 +5,7 @@ import { VineSurface, rand } from "./ivySurface";
  * glTF flips Blender's V coordinate: the stalk is at the high-V end.
  * Connected rock underlays, constant-UV stems and segmented hanging strands
  * are retained. Only isolated, rectangular two-triangle cards are rebuilt. */
-export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matrix4, rock?: VineSurface): THREE.BufferGeometry {
+export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matrix4, rock?: VineSurface, fuzzyAtlas=false): THREE.BufferGeometry {
   if (source.userData.curvedIvy) return source;
   const position = source.getAttribute("position"), uv = source.getAttribute("uv");
   if (!position || !uv || !source.index) return source;
@@ -76,7 +76,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     const reverse = geometric.dot(normal) * Math.sign(world.determinant()) < 0;
     for (let copy = 0; copy < copies; copy++) {
       const offset = count;
-      const turn = copy ? (rand(3197, a!, 5) - .5) * .8 : 0;
+      const turn = (rand(3197, a!, 5) - .5) * (copy ? .65 : .25);
       const size = copy ? Math.min(2.4, Math.max(1.65 + .3 * rand(3197, a!, 6), .11 / height))
         : 1.25 + .20 * rand(3197, a!, 6);
       const shoot = top.clone().sub(bottom).normalize().applyAxisAngle(normal, turn);
@@ -93,7 +93,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       const warmth = (rand(3197, cluster, 31) - .5) * .04;
       // Mix the existing painted, ragged-edged atlas silhouettes into the
       // visible layer, preserving solid UVs used by the stems/underlay.
-      const fuzzy = components.size > 16 && du < .195 && (copy > 0 || rand(6203, a!, 7) < .30);
+      const fuzzy = fuzzyAtlas || (components.size > 16 && du < .195);
       const fuzzyCell = Math.floor(rand(6203, a!, 8 + copy) * 15);
       const fuzzyU = (fuzzyCell % 4) * .25 + .03;
       const fuzzyV = Math.floor(fuzzyCell / 4) * .25 + .03;
