@@ -49,4 +49,12 @@ assert.ok(layered.getAttribute('position').getZ(19)>.004,'the original upper lay
 const masked=curveIvyGeometry(stacked,new THREE.Matrix4(),rock,()=>false);
 assert.equal(masked.userData.leafContacts,0,'transparent atlas pixels cannot support a stalk');
 assert.equal(masked.userData.hostContacts,2,'unsupported stalks fall back to a real host');
+const tilted=card.clone();
+tilted.getAttribute('position').setZ(2,.18); tilted.getAttribute('position').setZ(3,.18);
+const nestled=curveIvyGeometry(tilted,new THREE.Matrix4(),rock);
+for(let i=0;i<15;i++) assert.ok(nestled.getAttribute('position').getZ(i)<.010,
+  'a pitched leaf cannot leave a large air gap under its blade');
+const paintedBase=curveIvyGeometry(card,new THREE.Matrix4(),rock,uv=>uv.y<.15);
+assert.ok(Math.abs(paintedBase.getAttribute('uv').getY(4)-.15)<.003,
+  'attachment follows the first visible painted stalk rather than transparent atlas padding');
 console.log('Original leaf layers, alpha-aware attachments, texture preservation and clearance checks passed.');

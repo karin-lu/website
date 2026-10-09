@@ -29,7 +29,10 @@ from the host outward. Each visible stalk is seated 2 mm above the original
 solid underlay, a previously seated leaf, or the rock if no leaf supports it.
 Supporting leaves are checked against their atlas alpha: transparent space
 around a leaf does not count as contact. Blade samples are kept clear of the
-underlying leaves and the rock. Stalk attachment has no capped translation,
+underlying leaves and the rock, and seated close to that backing with a small
+arch (at most 2.2% of leaf height plus 2 mm). The attachment follows the first
+opaque pixel along the stalk, so transparent atlas padding cannot create a
+visible gap at its base. Stalk attachment has no capped translation,
 so unsupported original leaves cannot remain suspended above their host.
 
 Unnamed glTF groups are traversed to find the named ivy ancestor and its rock.
