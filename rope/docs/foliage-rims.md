@@ -21,11 +21,14 @@ the mound so the join also shares its lighting.
 
 Rock-hugging ivy bushes have blades at least 2–2.4 times their exported size,
 with a size floor for tiny cards (growth is capped at four times). A rounded
-6.5 cm arch and 3.5 cm tip lift expand the silhouette beyond the flat carpet.
+3.5 cm arch and varied 8.5–15.5 cm outward shoots expand the silhouette beyond
+the flat carpet. Shoots follow the host's outward direction, with some inherited
+stem direction and a gentle upward bias. Roots remain seated and tips curl softly.
 Every card
 in an ivy carpet receives one or two rotated companions at the same
 seated stalk. Companions reuse the original painted leaf UVs and colours,
-with slightly shaded bases. The greenery grows in overlapping layers around
+with per-leaf warm/cool green variation. Bases are shaded to 88–100% of their
+painted colour, fading toward 118–136% at the exposed tips. The greenery grows in overlapping layers around
 the rock rather than adding broad leaves to the separate fern clumps.
 Ferns retain their published geometry. Companion cards share the ivy material
 and mesh, so they do not introduce additional draw calls.

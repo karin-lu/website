@@ -15,14 +15,18 @@ assert.equal(curved.getAttribute('position').count, 15);
 assert.equal(curved.index!.count, 48);
 assert.ok(curved.getAttribute('position').getZ(4) < .02, 'leaf base settles against the rock');
 assert.ok(curved.getAttribute('position').getZ(7) > curved.getAttribute('position').getZ(4), 'leaf rises from its attachment');
-assert.ok(curved.getAttribute('position').getZ(13) < curved.getAttribute('position').getZ(10), 'tip curls down');
+assert.ok(curved.getAttribute('position').getZ(13) > .04, 'outer tip grows away from the host');
+assert.ok(curved.getAttribute('color').getY(13) > curved.getAttribute('color').getY(4) * 1.15,
+  'outer leaves brighten gradually from the shaded root');
 for (const value of curved.getAttribute('position').array) assert.ok(Number.isFinite(value));
 for (let i = 0; i < 15; i++) {
   assert.ok(curved.getAttribute('position').getZ(i) >= .0019, 'no rock penetration');
   assert.ok(curved.getAttribute('uv').getX(i) >= 0 && curved.getAttribute('uv').getX(i) <= .191);
-  assert.ok(Math.abs(curved.getAttribute('color').getY(i) - .6) < .00001);
+  assert.ok(curved.getAttribute('color').getY(i) >= .52 && curved.getAttribute('color').getY(i) <= .82,
+    'green variation stays within a natural range');
 }
 assert.deepEqual(curved.getAttribute('position').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('position').array);
+assert.deepEqual(curved.getAttribute('color').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('color').array);
 assert.equal(curveIvyGeometry(curved, new THREE.Matrix4(), rock), curved, 'no repeated bending');
 assert.equal(card.getAttribute('position').count, 4, 'source remains intact');
 const stem = card.clone(); stem.setAttribute('uv', new THREE.Float32BufferAttribute(Array(8).fill(.99), 2));

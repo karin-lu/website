@@ -67,15 +67,26 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       // A dense carpet can hide larger cards behind the same flat outline.
       // Give its blades a readable size and an outward, rounded silhouette.
       const size = Math.min(4, Math.max(copy ? 2.0 + .35 * rand(3197, a!, 6) : 2.4, .16 / height));
+      const outward = (hit?.normal ?? normal).clone();
+      const shoot = top.clone().sub(bottom).normalize().applyAxisAngle(normal, turn);
+      // Grow away from the host, with some inherited stem direction and a
+      // gentle upward bias. Each layer opens at a different angle and reach.
+      shoot.addScaledVector(outward, 1.8).add(new THREE.Vector3(0, .18, 0)).normalize();
+      const reach = .085 + .070 * rand(3197, a!, 11 + copy);
+      const colourVariation = rand(3197, a!, 21 + copy);
+      const rootShade = .88 + .12 * colourVariation;
+      const tipShade = 1.18 + .18 * colourVariation;
+      const warmth = (rand(3197, a!, 31 + copy) - .5) * .10;
       for (const s of rows) for (const u of [0, .5, 1]) {
         const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
         const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
         // Grow from the seated stalk, so a larger leaf cannot lift its root.
         p.sub(anchor).multiplyScalar(size).applyAxisAngle(normal, turn).add(anchor);
         const t = Math.max(0, (s - base) / (1 - base));
-        p.add(pull).addScaledVector(normal, height * ((copy ? .40 : .30) * Math.sin(Math.PI * t) - curl * t * t)
+        p.add(pull).addScaledVector(normal, height * ((copy ? .40 : .30) * Math.sin(Math.PI * t) - .3 * curl * t * t)
           + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t)
-          + .065 * Math.sin(Math.PI * t) + .035 * t);
+          + .035 * Math.sin(Math.PI * t));
+        p.addScaledVector(shoot, reach * t * t * (3 - 2 * t));
         // The same surface projection used by vines prevents curling into stone.
         rock?.project(p, s <= base ? .002 : .005);
         p.applyMatrix4(inverse);
@@ -85,7 +96,12 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
             if (name === "position") output.push(p.getComponent(k));
             else {
               const value = corners.reduce<number>((sum, id, j) => sum + attr.getComponent(id!, k) * weights[j]!, 0);
-              output.push(name === "color" && copy ? value * (.90 + .10 * t) : value);
+              if (name === "color" && k < 3) {
+                const outer = t * t * (3 - 2 * t);
+                const shade = THREE.MathUtils.lerp(rootShade, tipShade, outer);
+                const hue = k === 0 ? 1 + warmth : k === 2 ? 1 - warmth : 1;
+                output.push(THREE.MathUtils.clamp(value * shade * hue, 0, 1));
+              } else output.push(value);
             }
           }
         }
@@ -97,7 +113,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
         if (reverse) for (let j = 0; j < face.length; j += 3) [face[j + 1], face[j + 2]] = [face[j + 2]!, face[j + 1]!];
         triangles.push(...face);
       }
-      }
+    }
     ids.forEach(i => replaced.add(i));
   }
   if (!replaced.size) return source;
