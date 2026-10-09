@@ -41,6 +41,12 @@ overlapping smooth lobes sample the painted leaf texture and vertex colour,
 darkened to the inner foliage palette. They follow the seated stalks, with
 subtle shape variation and a shallow exposed cap. The support shares one
 material, adds one draw per bush, and adds no leaf cards or collision.
+The enlarged cushions have 15.5–17.5 cm and 14–15.8 cm tangent radii, with
+8.2–9.4 cm depth and a buried centre. Smoother, lightly varied lobes form a
+rounded backing. Blades rise over this cap while their stalks remain tucked in.
+Thirty percent of inner blades and the outer blades mix the existing ragged
+painted atlas cells; solid stem UVs remain intact. A lower alpha cutoff and
+alpha-to-coverage preserve the softer painted silhouette edges.
 
 Moss edge cards are 6–12 cm tall, with irregular lean and overlapping placement
 every 4.5 cm. Downward-facing rims also receive moss, filling the lower outline.

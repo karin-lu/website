@@ -13,7 +13,7 @@ export function buildBushSupport(leaves: THREE.BufferGeometry, world: THREE.Matr
     const key = site.point.map(v => Math.floor(v / .12)).join(',');
     if (!cells.has(key)) cells.set(key, site);
   }
-  const sphere = new THREE.SphereGeometry(1, 12, 8);
+  const sphere = new THREE.SphereGeometry(1, 16, 10);
   const vertices = sphere.getAttribute('position'), indices = sphere.index!;
   const inverse = world.clone().invert(), localNormal = new THREE.Matrix3().getNormalMatrix(inverse);
   const positions: number[] = [], normals: number[] = [], colours: number[] = [], faces: number[] = [];
@@ -26,15 +26,15 @@ export function buildBushSupport(leaves: THREE.BufferGeometry, world: THREE.Matr
     const up = n.clone().cross(right).normalize();
     // Most of the cushion sits inside the host; its rounded cap fills the
     // spaces beneath blades without forming a separate floating blob.
-    const centre = new THREE.Vector3().fromArray(site.point).addScaledVector(n, -.012);
-    const width = .105 + .018 * rand(6203, lobe, 1), height = .09 + .015 * rand(6203, lobe, 2);
-    const depth = .052 + .012 * rand(6203, lobe, 3);
+    const centre = new THREE.Vector3().fromArray(site.point).addScaledVector(n, -.025);
+    const width = .155 + .020 * rand(6203, lobe, 1), height = .140 + .018 * rand(6203, lobe, 2);
+    const depth = .082 + .012 * rand(6203, lobe, 3);
     const tint = sampleColour?.(new THREE.Vector2().fromArray(site.uv)) ?? new THREE.Color('#4d742c');
     tint.multiply(new THREE.Color().fromArray(site.colour)).multiplyScalar(.88);
     const offset = positions.length / 3;
     for (let i = 0; i < vertices.count; i++) {
       const v = new THREE.Vector3().fromBufferAttribute(vertices, i);
-      const irregular = 1 + .035 * Math.sin(v.x * 5 + lobe * .7) * Math.sin(v.y * 4);
+      const irregular = 1 + .018 * Math.sin(v.x * 5 + lobe * .7) * Math.sin(v.y * 4);
       const p = centre.clone().addScaledVector(right, v.x * width * irregular)
         .addScaledVector(up, v.y * height * irregular).addScaledVector(n, v.z * depth * irregular).applyMatrix4(inverse);
       const normal = right.clone().multiplyScalar(v.x / width).addScaledVector(up, v.y / height)

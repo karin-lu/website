@@ -91,6 +91,12 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       const rootShade = .91 + .04 * colourVariation;
       const tipShade = copy ? 1.13 + .07 * colourVariation : 1.01 + .03 * colourVariation;
       const warmth = (rand(3197, cluster, 31) - .5) * .04;
+      // Mix the existing painted, ragged-edged atlas silhouettes into the
+      // visible layer, preserving solid UVs used by the stems/underlay.
+      const fuzzy = components.size > 16 && du < .195 && (copy > 0 || rand(6203, a!, 7) < .30);
+      const fuzzyCell = Math.floor(rand(6203, a!, 8 + copy) * 15);
+      const fuzzyU = (fuzzyCell % 4) * .25 + .03;
+      const fuzzyV = Math.floor(fuzzyCell / 4) * .25 + .03;
       for (const s of rows) for (const u of [0, .5, 1]) {
         const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
         const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
@@ -101,6 +107,8 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
           + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t)
           + (copy ? .025 : .009) * Math.sin(Math.PI * t));
         p.addScaledVector(shoot, reach * t * t * (3 - 2 * t));
+        // Seat the blade over the larger cushion while its stalk stays buried.
+        p.addScaledVector(outward, .065 * Math.sin(t * Math.PI / 2));
         if (copy) p.y -= .025 * t * t * t;
         // The same surface projection used by vines prevents curling into stone.
         rock?.project(p, s <= base ? .002 : .005);
@@ -111,7 +119,9 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
             if (name === "position") output.push(p.getComponent(k));
             else {
               const value = corners.reduce<number>((sum, id, j) => sum + attr.getComponent(id!, k) * weights[j]!, 0);
-              if (name === "color" && k < 3) {
+              if (name === 'uv' && fuzzy) {
+                output.push(k === 0 ? fuzzyU + u * .19 : fuzzyV + (1 - s) * .19);
+              } else if (name === "color" && k < 3) {
                 const outer = t * t * (3 - 2 * t);
                 const shade = THREE.MathUtils.lerp(rootShade, tipShade, outer);
                 const hue = k === 0 ? 1 + warmth : k === 2 ? 1 - warmth : 1;

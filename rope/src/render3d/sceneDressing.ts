@@ -240,6 +240,9 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
             if (ivy) {
               mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh));
               if (mesh.geometry.userData.ivySupportSites?.length) bushSupports.push(mesh);
+              for (const m of mats) {
+                if (m.alphaTest > 0) { m.alphaTest = .25; m.alphaToCoverage = true; }
+              }
             }
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
