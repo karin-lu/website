@@ -22,4 +22,11 @@ const translated = buildMossFringe(patch, new THREE.Matrix4().makeTranslation(2,
 assert.equal(translated.userData.mossFringeCards, fringe.userData.mossFringeCards, 'placement is host-local');
 for (const v of fringe.getAttribute('uv').array) assert.ok(v >= 0 && v <= 1);
 assert.equal(patch.getAttribute('position').count, 6, 'cached mound stays intact');
+patch.setAttribute('uv', new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,0,1,1,0,1], 2));
+const ground = new THREE.Color('#6f913b');
+const matched = buildMossFringe(patch, new THREE.Matrix4(), undefined, 8107, () => ground.clone());
+const colour = matched.getAttribute('color');
+assert.ok(Math.abs(colour.getX(0) - ground.r) < 1e-6, 'tuft root matches sampled moss colour');
+assert.ok(Math.abs(colour.getY(0) - ground.g) < 1e-6);
+assert.ok(colour.getY(4) > colour.getY(0), 'the colour fades gently toward lighter tips');
 console.log('Moss rim welding, bounded density, rooted cards and deterministic placement passed.');

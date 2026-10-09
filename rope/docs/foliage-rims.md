@@ -13,6 +13,16 @@ welds the mound's split UV-chart vertices, then samples its open rim and the
 silhouette facing the side-scroller camera (+z). Bases overlap the mound; size,
 spacing, atlas cell and tint vary deterministically. Soft surface-biased normals,
 dark bases and a shared material help the fringe read as part of the cushion.
+Tuft colours are sampled from each mound's painted texture at their attachment,
+including its glTF UV transform. Roots match the local moss and tips gradually
+lighten by 12%; the reference atlas contributes its cutout silhouette and slight
+texture detail rather than a dark grayscale band. Normals are interpolated from
+the mound so the join also shares its lighting.
+
+Bushes and ferns are enlarged by 30% about the dark crown in the solid atlas cell.
+Their compressed position attributes are decoded to floats before enlargement.
+Ivy blades spread 22% farther from their seated stalk and have a fuller arch.
+
 Cards ride their original host and have no collision. The budget is at most
 600 cards per mound, distributed around its rim, with one draw call per mound.
 
@@ -24,6 +34,7 @@ painted moss and rocks remain the base appearance.
 Checks:
 
 - `bun run scripts/test-ivy-geometry.ts`
+- `bun run scripts/test-bush-volume.ts`
 - `bun run scripts/test-moss-fringe.ts`
 - `bun run scripts/test-foliage-scene.mts` (requires `bun run assets:fetch`)
 - `bun run typecheck`

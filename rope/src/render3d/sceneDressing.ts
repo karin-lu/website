@@ -20,6 +20,7 @@ import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
 import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
 import { addMossFringes } from "./mossFringe";
+import { fullerBushGeometry } from "./bushVolume";
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -236,6 +237,11 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
           if (ivy || foliage) {
             if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh));
+            // Blender plants are authored about their crown. Scale the whole
+            // fern/bush there, retaining its stalks and its seated root.
+            if (foliage && names.some(n => /\.fern(\.\d+)?$/.test(n))) {
+              mesh.geometry = fullerBushGeometry(mesh.geometry);
+            }
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
             else foliageMeshes++;

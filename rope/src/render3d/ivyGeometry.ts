@@ -58,8 +58,10 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     for (const s of rows) for (const u of [0, .5, 1]) {
       const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
       const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
+      // Grow from the seated stalk, so a larger leaf cannot lift its root.
+      p.sub(anchor).multiplyScalar(1.22).add(anchor);
       const t = Math.max(0, (s - base) / (1 - base));
-      p.add(pull).addScaledVector(normal, height * (.16 * Math.sin(Math.PI * t) - curl * t * t)
+      p.add(pull).addScaledVector(normal, height * (.24 * Math.sin(Math.PI * t) - curl * t * t)
         + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
       // The same surface projection used by vines prevents curling into stone.
       rock?.project(p, s <= base ? .002 : .005);
