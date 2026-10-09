@@ -38,7 +38,9 @@ root.traverse(o=>{
   if (!(o instanceof THREE.Mesh)) return;
   const material = o.material as THREE.Material;
   if (/^Ivy(Clumps)?$/.test(material.name)) {
-    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,ivyHostSurface(o));
+    const host=ivyHostSurface(o);
+    assert.ok(host, `the rock host is found through unnamed groups for ${o.parent!.parent!.name}`);
+    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host);
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');
     for (const v of curved.getAttribute('position').array) assert.ok(Number.isFinite(v));
     leaves += curved.userData.ivyLeafCards;

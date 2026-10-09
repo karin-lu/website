@@ -19,13 +19,19 @@ lighten by 6%; the reference atlas contributes its cutout silhouette and slight
 texture detail rather than a dark grayscale band. Normals are interpolated from
 the mound so the join also shares its lighting.
 
-Rock-hugging ivy bushes have 80% larger blades and a fuller arch. Every card
+Rock-hugging ivy bushes have blades at least 2–2.4 times their exported size,
+with a size floor for tiny cards (growth is capped at four times). A rounded
+6.5 cm arch and 3.5 cm tip lift expand the silhouette beyond the flat carpet.
+Every card
 in an ivy carpet receives one or two rotated companions at the same
-seated stalk, sized 45–70% larger than the original export. Companions reuse the original painted leaf UVs and colours,
+seated stalk. Companions reuse the original painted leaf UVs and colours,
 with slightly shaded bases. The greenery grows in overlapping layers around
 the rock rather than adding broad leaves to the separate fern clumps.
 Ferns retain their published geometry. Companion cards share the ivy material
 and mesh, so they do not introduce additional draw calls.
+Host lookup traverses the unnamed groups inserted by the glTF exporter before
+finding the named ivy ancestor and its rock. Scene checks verify that every
+ivy primitive finds its rock through this hierarchy.
 
 Moss edge cards are 6–12 cm tall, with irregular lean and overlapping placement
 every 4.5 cm. Downward-facing rims also receive moss, filling the lower outline.

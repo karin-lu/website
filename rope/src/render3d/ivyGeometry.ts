@@ -64,7 +64,9 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     for (let copy = 0; copy < copies; copy++) {
       const offset = count;
       const turn = copy ? (copy === 1 ? -.65 : .65) + (rand(3197, a!, 5) - .5) * .5 : 0;
-      const size = copy ? 1.45 + .25 * rand(3197, a!, 6) : 1.8;
+      // A dense carpet can hide larger cards behind the same flat outline.
+      // Give its blades a readable size and an outward, rounded silhouette.
+      const size = Math.min(4, Math.max(copy ? 2.0 + .35 * rand(3197, a!, 6) : 2.4, .16 / height));
       for (const s of rows) for (const u of [0, .5, 1]) {
         const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
         const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
@@ -72,7 +74,8 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
         p.sub(anchor).multiplyScalar(size).applyAxisAngle(normal, turn).add(anchor);
         const t = Math.max(0, (s - base) / (1 - base));
         p.add(pull).addScaledVector(normal, height * ((copy ? .40 : .30) * Math.sin(Math.PI * t) - curl * t * t)
-          + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
+          + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t)
+          + .065 * Math.sin(Math.PI * t) + .035 * t);
         // The same surface projection used by vines prevents curling into stone.
         rock?.project(p, s <= base ? .002 : .005);
         p.applyMatrix4(inverse);
@@ -124,6 +127,11 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
 export function ivyHostSurface(mesh: THREE.Mesh): VineSurface | undefined {
   let host = mesh.parent;
   const ivyName = (o: THREE.Object3D) => /\.(ivy|moss)(\.shadow)?$/.test(String(o.userData.name ?? o.name));
+  // Quantisation and multi-material exports insert unnamed groups between
+  // the primitive mesh and its named ivy object. Find that object first.
+  for (let ancestor = mesh.parent; ancestor; ancestor = ancestor.parent) {
+    if (ivyName(ancestor)) { host = ancestor; break; }
+  }
   while (host && ivyName(host)) host = host.parent;
   if (!host) return;
   const soup: number[] = [];
