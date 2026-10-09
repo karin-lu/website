@@ -30,8 +30,8 @@
     ]
   },
   "river": {
-    "sha256": "07b5e9d0b7e02fc72f653894736680831fdb22af1aeba8801de125a053867115",
-    "bytes": 19215524,
+    "sha256": "21457249f818d1d40ac48c95507cd8078918c9b4e5c8c9cb196f15449d6b3b2a",
+    "bytes": 20824672,
     "credits": [
       {
         "name": "finish_line",
@@ -51,6 +51,7 @@
         "source": "https://sketchfab.com/3d-models/wooden-stool-528f72346b2f4a1096c1d5104b731d04",
         "license": "CC BY 4.0"
       }
-    ]
+    ],
+    "url": "https://github.com/karin-lu/website/releases/download/foliage-assets-20261009/scene-river-21457249f818.glb"
   }
 }

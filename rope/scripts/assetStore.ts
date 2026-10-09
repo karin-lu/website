@@ -53,6 +53,7 @@ export interface StoredAsset {
   // The file's name in the release, when it is not the basename of `file`: a
   // scene is always `scene.glb` on disk (see `sceneReleaseName`).
   name?: string;
+  url?: string;
 }
 
 export function storedAssets(): StoredAsset[] {
@@ -112,6 +113,7 @@ export function storedAssets(): StoredAsset[] {
       sha256: asset.sha256,
       bytes: asset.bytes,
       name: sceneReleaseName(scene),
+      url: asset.url,
     });
   }
   return out;
@@ -134,7 +136,8 @@ export function assetName(asset: { file: string; name?: string }): string {
   return asset.name ?? basename(asset.file);
 }
 
-export function assetUrl(asset: { file: string; name?: string }): string {
+export function assetUrl(asset: { file: string; name?: string; url?: string }): string {
+  if (asset.url) return asset.url;
   return `https://github.com/${ASSET_REPO}/releases/download/${ASSET_TAG}/${assetName(asset)}`;
 }
 

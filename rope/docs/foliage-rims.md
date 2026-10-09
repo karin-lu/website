@@ -1,9 +1,25 @@
 # Original layered ivy and moss rims
 
 The rock-hugging bushes use their original Blender-grown ivy geometry again.
-The original leaf count, size, growth direction, atlas cells, vertex colours,
-solid underlay and clump detail are preserved. Added backing blobs, duplicated
+The original growth direction, atlas cells, green palette, solid underlay and
+clump detail are preserved. Added backing blobs, duplicated
 outer fans, atlas substitutions and camera-facing coverage have been removed.
+
+The fuller-bush revision regrows the painted bushes in Blender: leaf and clump
+lengths are 15% larger, mound thickness is 20% greater, leaf/clump area fill is
+35% greater, and edge fill is 20% greater. Increasing fill with size avoids
+reducing the leaf count as larger cards cover more area. Paint masks, seeds,
+vine anchors and the rest of the scene retain their original settings.
+
+Reproduce from the pinned `assets-src/scenes/river.blend` with Blender's
+`--factory-startup --background ... --python tools/blender/fuller_ivy.py --
+--output ivy.json`, then merge into a clean pinned scene with
+`bun run scripts/merge-fuller-ivy.mts original.glb ivy.json scene.glb`.
+The recipe scales settings in memory only; it does not overwrite the source
+or accumulate increases across runs. Its `--only <ivy object name>` option
+supports previewing one bush. The merged scene retains all original textures,
+materials, node transforms and non-ivy geometry. A separate release on the
+user's fork supplies the branch-specific scene, pinned by URL and SHA-256.
 
 Only individual rectangular leaf cards are bent. Their stalk-to-tip path has
 a small arch, mild tip curl and a slight cross-blade fold. Layers are processed

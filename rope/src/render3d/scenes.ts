@@ -71,6 +71,8 @@ export interface SceneCredit {
 export interface SceneAsset {
   sha256: string;
   bytes: number;
+  // A branch may pin its own release without replacing the shared scene.
+  url?: string;
   credits?: SceneCredit[];
 }
 export const SCENE_ASSETS: Readonly<Record<string, SceneAsset>> = manifest;
