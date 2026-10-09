@@ -36,6 +36,12 @@ Host lookup traverses the unnamed groups inserted by the glTF exporter before
 finding the named ivy ancestor and its rock. Scene checks verify that every
 ivy primitive finds its rock through this hierarchy.
 
+Every ivy bush also receives a solid green cushion beneath its leaves. Embedded,
+overlapping smooth lobes sample the painted leaf texture and vertex colour,
+darkened to the inner foliage palette. They follow the seated stalks, with
+subtle shape variation and a shallow exposed cap. The support shares one
+material, adds one draw per bush, and adds no leaf cards or collision.
+
 Moss edge cards are 6–12 cm tall, with irregular lean and overlapping placement
 every 4.5 cm. Downward-facing rims also receive moss, filling the lower outline.
 Both ends of each card's lower two rows conform to the moss cushion: the bottom

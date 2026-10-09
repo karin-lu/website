@@ -27,6 +27,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   let count = 0, leafCards = 0, companionLeaves = 0;
   const outerFans = new Set<string>();
   const fanRoots: THREE.Vector3[] = [];
+  const supportSites: { point: number[]; normal: number[]; uv: number[]; colour: number[] }[] = [];
   const get = (id: number) => new THREE.Vector3().fromBufferAttribute(position, id).applyMatrix4(world);
   for (const ids of components.values()) {
     if (ids.length !== 4) continue;
@@ -58,6 +59,9 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     const curl = .09 + .07 * rand(2401, a!, 1), fold = .07 + .06 * rand(2401, a!, 2);
     const outward = (hit?.normal ?? normal).clone();
     const seated = anchor.clone().add(pull);
+    const colour = source.getAttribute('color');
+    supportSites.push({ point: seated.toArray(), normal: outward.toArray(), uv: [(loU + hiU) / 2, hiV - dv * .55],
+      colour: [0, 1, 2].map(k => colour ? corners.reduce<number>((sum, id) => sum + colour.getComponent(id!, k), 0) / 4 : 1) });
     const cell = [seated.x, seated.y, seated.z].map(v => Math.floor(v / .18));
     const fanKey = cell.join(',');
     // A compact original carpet fills the rock. Only well-spaced locations
@@ -148,6 +152,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   geometry.userData.ivyLeafCards = leafCards;
   geometry.userData.rockBushCompanionLeaves = companionLeaves;
   geometry.userData.rockBushFanRoots = fanRoots.map(root => root.toArray());
+  geometry.userData.ivySupportSites = supportSites;
   return geometry;
 }
 

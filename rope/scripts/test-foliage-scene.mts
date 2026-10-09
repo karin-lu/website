@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { curveIvyGeometry } from '../src/render3d/ivyGeometry';
 import { ivyHostSurface } from '../src/render3d/ivyGeometry';
 import { buildMossFringe } from '../src/render3d/mossFringe';
+import { buildBushSupport } from '../src/render3d/bushSupport';
 import assert from 'node:assert/strict';
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.decoder':MeshoptDecoder});
@@ -16,7 +17,7 @@ for (const node of doc.getRoot().listNodes()) {
   group.matrix.fromArray(node.getMatrix()); group.matrixAutoUpdate=false; objects.set(node,group);
 }
 for (const [node,group] of objects) (objects.get(node.getParentNode()) ?? root).add(group);
-let leaves=0,companions=0,tufts=0,mounds=0;
+let leaves=0,companions=0,tufts=0,mounds=0,cushions=0;
 for (const node of doc.getRoot().listNodes()) {
   for (const prim of node.getMesh()?.listPrimitives() ?? []) {
     const mat = prim.getMaterial()!;
@@ -41,6 +42,15 @@ root.traverse(o=>{
     const host=ivyHostSurface(o);
     assert.ok(host, `the rock host is found through unnamed groups for ${o.parent!.parent!.name}`);
     const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host);
+    const before = curved.getAttribute('position').count;
+    const cushion = buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38'));
+    assert.ok(cushion.userData.bushSupportLobes > 0, 'every rock bush receives solid support');
+    for (const value of cushion.getAttribute('position').array) assert.ok(Number.isFinite(value));
+    assert.equal(curved.getAttribute('position').count, before, 'support adds no leaf cards');
+    assert.deepEqual(cushion.getAttribute('position').array,
+      buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38')).getAttribute('position').array,
+      'the organic support remains stable between loads');
+    cushions++;
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');
     const roots = curved.userData.rockBushFanRoots as number[][];
     for (let i=0;i<roots.length;i++) for (let j=0;j<i;j++) {
@@ -60,5 +70,6 @@ root.traverse(o=>{
   }
 });
 assert.equal(mounds,3); assert.ok(leaves>1000);
+assert.equal(cushions,5, 'all five ivy bushes get a green cushion');
 assert.ok(companions>20 && companions < leaves * .25, 'outer fans are sparse over a compact inner carpet');
 console.log(`Published river scene passed: ${leaves} curved leaf cards including ${companions} rooted companions, ${tufts} edge tufts across ${mounds} moss mounds.`);
