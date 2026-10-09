@@ -5,7 +5,7 @@ type Face = { normal: THREE.Vector3; centre: THREE.Vector3; corners: THREE.Vecto
   uvs: THREE.Vector2[]; shading?: THREE.Vector3[] };
 type Edge = { a: number; b: number; faces: Face[] };
 // Cropped, padded cells in the supplied tuft atlas; base first, V up.
-const CELLS = [
+export const CELLS = [
   [.035, .520, .440, .295], [.507, .525, .477, .205],
   [.075, .029, .354, .374], [.520, .021, .460, .173],
 ] as const;
@@ -209,6 +209,7 @@ export async function addMossFringes(root: THREE.Object3D, surfaceFor: (mesh: TH
     if (!geometry.userData.mossFringeCards) { geometry.dispose(); continue; }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = "Moss edge tufts";
+    mesh.userData.mossPatch = mossMaterial.name;
     mesh.receiveShadow = true; mesh.castShadow = false;
     mound.add(mesh);
   }

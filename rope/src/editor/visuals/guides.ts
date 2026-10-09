@@ -638,15 +638,18 @@ export class Guides {
     const withMinor = lines <= GRID_MAX_LINES;
     // Integer steps, so a line's position is computed rather than accumulated.
     const nx = Math.round((x1 - x0) / MINOR_M);
-    for (let i = 0; i <= nx; i++) {
+    const ny = Math.round((y1 - y0) / MINOR_M);
+    if (!Number.isFinite(nx + ny)) return;
+    // Very large collision volumes must not allocate millions of major lines.
+    const stride = withMinor ? 1 : perMajor * Math.max(1, Math.ceil((nx + ny) / perMajor / GRID_MAX_LINES));
+    for (let i = 0; i <= nx; i += stride) {
       const x = x0 + i * MINOR_M;
       const isMajor = i % perMajor === 0;
       if (!isMajor && !withMinor) continue;
       const into = Math.abs(x) < MINOR_M / 2 ? axis : isMajor ? major : minor;
       into.push(x, -y0, 0, x, -y1, 0);
     }
-    const ny = Math.round((y1 - y0) / MINOR_M);
-    for (let j = 0; j <= ny; j++) {
+    for (let j = 0; j <= ny; j += stride) {
       const y = y0 + j * MINOR_M;
       const isMajor = j % perMajor === 0;
       if (!isMajor && !withMinor) continue;

@@ -1,3 +1,4 @@
+import type { FoliageCards } from "../level/foliageCards";
 // Editor scene model. Mirrors LevelData but keeps positions as Vec2 in WORLD
 // METRES (so it shares the camera/pointer un-projection with the sim), plus a
 // stable id per item for selection. Conversions to/from the on-disk pixel
@@ -868,6 +869,7 @@ export interface EdModel {
   // the whole file - and offered on the Level panel, since naming the scene is
   // half of binding a body to it (the other half is the body's `name`).
   scene: string;
+  foliageCards: FoliageCards;
 }
 
 // Every field of the environment block, in the order the inspector shows them,
@@ -1803,6 +1805,7 @@ function lightItem(
     camera: data.camera ? { ...data.camera } : undefined,
     meta: { ...data.meta },
     scene: data.scene ?? "",
+    foliageCards: structuredClone(data.foliageCards ?? {}),
   };
 }
 
@@ -2398,6 +2401,7 @@ export function toLevelData(model: EdModel, itemOf?: Map<SceneObjectData, number
     ...(model.environment ? { environment: { ...model.environment } } : {}),
     ...(model.camera ? { camera: { ...model.camera } } : {}),
     ...(model.scene ? { scene: model.scene } : {}),
+    ...(Object.keys(model.foliageCards).length ? { foliageCards: structuredClone(model.foliageCards) } : {}),
     ...(notes.length ? { notes } : {}),
     ...(checkpoints.length ? { checkpoints } : {}),
     ...(chains.length ? { chains } : {}),
@@ -4119,6 +4123,7 @@ export function emptyModel(): EdModel {
     meta: {},
     // No look yet: seen by its pieces' debug geometry until a scene is named.
     scene: "",
+    foliageCards: {},
     items: [
       {
         id: newBodyId(),

@@ -1,3 +1,5 @@
+import type { FoliageCards } from "../level/foliageCards";
+import { applyMossCardEdits, disposeMossCardEdits } from "./mossCardEdits";
 // The level's Blender scene, loaded and mounted (see docs/blender-scenes.md and
 // `scenes.ts` for what a scene is).
 //
@@ -66,11 +68,12 @@ const SHADOW_Z = -0.05;
 // the file is cached for the page and mounted again on every rebuild (the
 // editor rebuilds on every edit), and geometry and materials are shared
 // between the clones as a pack's props share theirs.
-export function dressScene(loaded: THREE.Object3D, targets: readonly DressTarget[]): Dressed {
+export function dressScene(loaded: THREE.Object3D, targets: readonly DressTarget[], edits?: FoliageCards): Dressed {
   const scenery = new THREE.Group();
   scenery.name = "scenery";
   scenery.userData["pickTag"] = SCENERY_TAG;
   const clone = loaded.clone(true);
+  applyMossCardEdits(clone, edits);
   clone.updateMatrixWorld(true);
 
   const byNode = new Map<string, DressTarget>();
@@ -271,11 +274,11 @@ export class SceneDressing {
 
   // `landed` is handed the scenery once it is mounted, for what the scene
   // itself still draws over it (the pool's water, `Scene3D.adoptSceneryWater`).
-  constructor(scene: string, targets: readonly DressTarget[], landed?: (scenery: THREE.Group) => void) {
+  constructor(scene: string, targets: readonly DressTarget[], landed?: (scenery: THREE.Group) => void, edits?: FoliageCards) {
     this.root.name = `scene:${scene}`;
     void loadSceneFile(scene).then((loaded) => {
       if (!loaded || this.disposed) return;
-      const dressed = dressScene(loaded, targets);
+      const dressed = dressScene(loaded, targets, edits);
       this.bound = dressed.bound;
       this.unbound = dressed.unbound;
       this.root.add(dressed.scenery);
@@ -298,6 +301,8 @@ export class SceneDressing {
 
   dispose(): void {
     this.disposed = true;
+    disposeMossCardEdits(this.root);
+    for (const node of this.bound.values()) disposeMossCardEdits(node);
     // Geometry and materials are the cached file's, shared with every other
     // mount, so nothing is freed here - as a pack's props are not.
     this.root.clear();
