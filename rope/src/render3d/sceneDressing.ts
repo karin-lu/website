@@ -20,7 +20,8 @@ import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
 import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
 import { addMossFringes, mossColourSampler } from "./mossFringe";
-import { buildBushSupport, seatLeavesOverSupport } from "./bushSupport";
+import { buildBushSupport } from "./bushSupport";
+import { buildBushLeafCover } from "./bushLeafCover";
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -269,7 +270,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           const leafMaterial = (Array.isArray(bush.material) ? bush.material[0] : bush.material) as THREE.MeshStandardMaterial;
           const geometry = buildBushSupport(bush.geometry, bush.matrixWorld, mossColourSampler(leafMaterial));
           if (!geometry.userData.bushSupportLobes) { geometry.dispose(); continue; }
-          bush.geometry = seatLeavesOverSupport(bush.geometry, geometry, bush.matrixWorld);
+          bush.geometry = buildBushLeafCover(geometry, bush.geometry, bush.matrixWorld);
           const cushion = new THREE.Mesh(geometry, cushionMaterial);
           cushion.name = 'Bush green cushion'; cushion.receiveShadow = true; cushion.castShadow = false;
           bush.add(cushion);

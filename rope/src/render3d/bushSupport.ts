@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/addons/objects/MarchingCubes.js';
-import { VineSurface } from './ivySurface';
+
 
 type Site = { point: number[]; normal: number[]; uv: number[]; colour: number[] };
 
@@ -88,23 +88,3 @@ export function buildBushSupport(leaves: THREE.BufferGeometry, world: THREE.Matr
   return result;
 }
 
-/** Keep the visible blade rows outside the actual backing, rather than
- * assuming a constant cushion height. Stalks remain concealed inside it. */
-export function seatLeavesOverSupport(leaves: THREE.BufferGeometry, backing: THREE.BufferGeometry,
-  world: THREE.Matrix4): THREE.BufferGeometry {
-  const support = backing.getAttribute('position');
-  if (!support?.count) return leaves;
-  const soup: number[] = [], point = new THREE.Vector3();
-  for (let i=0;i<support.count;i++) point.fromBufferAttribute(support,i).applyMatrix4(world).toArray(soup,soup.length);
-  const surface = new VineSurface(soup);
-  const result = leaves.clone(), position=result.getAttribute('position'), inverse=world.clone().invert();
-  for (let card=0;card<leaves.userData.ivyLeafCards;card++) for (let vertex=6;vertex<15;vertex++) {
-    const i=card*15+vertex;
-    point.fromBufferAttribute(position,i).applyMatrix4(world);
-    surface.project(point,.006);
-    point.applyMatrix4(inverse); position.setXYZ(i,point.x,point.y,point.z);
-  }
-  result.computeVertexNormals(); result.computeBoundingBox(); result.computeBoundingSphere();
-  result.userData.leavesAboveSupport=true;
-  return result;
-}
