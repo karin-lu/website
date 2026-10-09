@@ -56,5 +56,5 @@ function sizes(root: typeof a) {
 const original=sizes(a), fuller=sizes(b), ratio=fuller.mean/original.mean;
 assert.equal(changed,5,'all five painted ivy bushes rebuilt');
 assert.ok(fuller.count>original.count,'larger leaves retain and improve coverage');
-assert.ok(ratio>1.08 && ratio<1.25,`larger cards: ${ratio}`);
+assert.ok(ratio>1.18 && ratio<1.4,`larger cards: ${ratio}`);
 console.log(`Five bushes updated; ${nonIvy} other primitives and all textures unchanged. Average leaf card size +${((ratio-1)*100).toFixed(1)}%; ${original.count} → ${fuller.count} individual leaf cards.`);

@@ -35,13 +35,13 @@ for ob in objects:
     s.live = False
     # Area grows with the square of leaf size. Increase fill slightly more
     # than that to preserve the leaf count and improve overlap as well.
-    s.leaf_min *= 1.15
-    s.leaf_max *= 1.15
-    s.clump_min *= 1.15
-    s.clump_max *= 1.15
+    s.leaf_min *= 1.265
+    s.leaf_max *= 1.265
+    s.clump_min *= 1.265
+    s.clump_max *= 1.265
     s.thickness *= 1.20
-    s.leaf_fill *= 1.35
-    s.clump_fill *= 1.35
+    s.leaf_fill *= 1.6335
+    s.clump_fill *= 1.6335
     s.edge_fill *= 1.20
     result = ops.rebuild(ob)
     if result is None:

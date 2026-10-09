@@ -57,12 +57,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     const n = source.getAttribute("normal");
     const normal = n ? new THREE.Vector3().fromBufferAttribute(n, a!).applyMatrix3(normalMatrix).normalize()
       : points[1]!.clone().sub(points[0]!).cross(top.clone().sub(bottom)).normalize();
-    let base = du > .195 ? .16 : .09;
-    // A fuzzy atlas may have transparent space before its painted stalk.
-    // Seat the visible leaf itself, not an invisible point on its rectangle.
-    if (opaque) for (let s=.02;s<=.4;s+=.01) {
-      if (opaque(new THREE.Vector2((loU+hiU)*.5,hiV-(hiV-loV)*s))) { base=s; break; }
-    }
+    const base = du > .195 ? .16 : .09;
     const anchor = bottom.clone().lerp(top, base), pull = new THREE.Vector3();
     const leafHit=support.below(anchor.clone().addScaledVector(normal,.004),normal,Math.max(.4,height*1.2));
     const hit=leafHit ?? rock?.nearest(anchor);
@@ -73,7 +68,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       if (leafHit) leafContacts++; else hostContacts++;
     }
     const curl = .025 + .02 * rand(2401, a!, 1), fold = .025 + .02 * rand(2401, a!, 2);
-    const rows = [0, base, base+(1-base)*.34, base+(1-base)*.67, 1], offset = count;
+    const rows = [0, base, .4, .7, 1], offset = count;
     const worldPoints:THREE.Vector3[]=[];
     for (const s of rows) for (const u of [0, .5, 1]) {
       const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
@@ -84,16 +79,8 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       // The same surface projection used by vines prevents curling into stone.
       if (s>base) {
         const beneath=support.below(p.clone().addScaledVector(normal,.08),normal,.16);
-        const backing=beneath ?? rock?.nearest(p,height*.35);
-        if (backing) {
-          const gap=p.clone().sub(backing.point).dot(backing.normal);
-          // Keep the blade nestled into the bush, with only a small soft
-          // arch between its seated base and tip. A rooted stalk alone can
-          // still leave a conspicuous air gap beneath the broad blade.
-          const maxGap=.002+height*.022*Math.sin(Math.PI*t);
-          if (gap<.002) p.copy(backing.point).addScaledVector(backing.normal,.002);
-          else if (gap>maxGap) p.addScaledVector(backing.normal,maxGap-gap);
-        }
+        if (beneath && p.clone().sub(beneath.point).dot(beneath.normal)<.002)
+          p.copy(beneath.point).addScaledVector(beneath.normal,.002);
       }
       rock?.project(p, .002);
       worldPoints.push(p.clone());

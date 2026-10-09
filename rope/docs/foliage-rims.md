@@ -6,8 +6,9 @@ clump detail are preserved. Added backing blobs, duplicated
 outer fans, atlas substitutions and camera-facing coverage have been removed.
 
 The fuller-bush revision regrows the painted bushes in Blender: leaf and clump
-lengths are 15% larger, mound thickness is 20% greater, leaf/clump area fill is
-35% greater, and edge fill is 20% greater. Increasing fill with size avoids
+lengths are 26.5% larger than the original scene (10% above the first fuller
+revision), mound thickness is 20% greater, leaf/clump area fill is 63.35%
+greater, and edge fill is 20% greater. Increasing fill with size avoids
 reducing the leaf count as larger cards cover more area. Paint masks, seeds,
 vine anchors and the rest of the scene retain their original settings.
 
@@ -29,10 +30,7 @@ from the host outward. Each visible stalk is seated 2 mm above the original
 solid underlay, a previously seated leaf, or the rock if no leaf supports it.
 Supporting leaves are checked against their atlas alpha: transparent space
 around a leaf does not count as contact. Blade samples are kept clear of the
-underlying leaves and the rock, and seated close to that backing with a small
-arch (at most 2.2% of leaf height plus 2 mm). The attachment follows the first
-opaque pixel along the stalk, so transparent atlas padding cannot create a
-visible gap at its base. Stalk attachment has no capped translation,
+underlying leaves and the rock. Stalk attachment has no capped translation,
 so unsupported original leaves cannot remain suspended above their host.
 
 Unnamed glTF groups are traversed to find the named ivy ancestor and its rock.
