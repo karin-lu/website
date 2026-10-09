@@ -1,4 +1,3 @@
-import { FoliageEditor } from "./foliage";
 // Level editor. Owns its own canvas loop and DOM overlay (toolbar + inspector),
 // manipulates an EdModel with the mouse, tests the scene with either controller,
 // and saves/loads levels from disk through the dev-server API.
@@ -962,7 +961,6 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
     // undo is meant to be restoring.
     meta: { ...m.meta },
     scene: m.scene,
-    foliageCards: structuredClone(m.foliageCards),
   });
   const resetHistory = (): void => {
     history.length = 0;
@@ -1725,7 +1723,7 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
         }),
       };
     });
-    return JSON.stringify({ ...data, foliageCards: undefined, bodies, vines, items: [...itemOf.values()] });
+    return JSON.stringify({ ...data, bodies, vines, items: [...itemOf.values()] });
   }
 
   // THE GAME'S CAMERA, FOR THE FOG. The editor fogs every surface by the depth
@@ -2110,9 +2108,9 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
   if (visuals) {
     const row = el("div", "ed-row");
     bar.appendChild(row);
-    workspaceBtns.level = button("Level", () => { foliageEditor?.setActive(false); setWorkspace("level"); });
+    workspaceBtns.level = button("Level", () => setWorkspace("level"));
     workspaceBtns.level.title = "Author the level against the gameplay plane: the 2D camera and the overlay (W toggles)";
-    workspaceBtns.visuals = button("Visuals", () => { foliageEditor?.setActive(false); setWorkspace("visuals"); });
+    workspaceBtns.visuals = button("Visuals", () => setWorkspace("visuals"));
     workspaceBtns.visuals.title =
       "See the level in a free 3D view, against its Blender scene: middle drag orbits, Shift + middle or right drag pans, the wheel dollies, F frames, Home faces the plane (W toggles)";
     row.append(workspaceBtns.level, workspaceBtns.visuals);
@@ -2486,20 +2484,6 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
   // Inspector.
   const inspector = el("div", "ed-inspector");
   root.appendChild(inspector);
-  const foliageEditor = scene3d ? new FoliageEditor({
-    canvas, root, scene: scene3d.scene, camera: () => scene3d.camera,
-    edits: () => model.foliageCards, begin: beginAction, changed: markDirty,
-    editable: () => mode === "edit",
-    enter: () => {
-      selectedIds.clear(); selectedVerts.clear(); selectedBodyIds.clear();
-      rebuildInspector(); setWorkspace("visuals");
-    },
-    frame: box => visuals?.frameBox({ min: { x: box.min.x, y: box.min.y, z: box.min.z }, max: { x: box.max.x, y: box.max.y, z: box.max.z } }),
-  }) : null;
-  const foliageButton = button("Foliage", () => foliageEditor?.setActive(!foliageEditor.active));
-  foliageButton.title = "Move and reshape the individual moss foliage cards";
-  if (foliageEditor) bar.firstElementChild?.append(foliageButton);
-
 
   // --- outliner -------------------------------------------------------------
   // The level as it actually IS: a list of bodies, each expandable into the
@@ -10280,7 +10264,6 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
   // The Visuals workspace's status line: how to get around, and what the armed
   // tool or the selection offers there that the Level workspace does not say.
   function visualsStatus(): string {
-    if (foliageEditor?.active) return "MOSS CARDS · drag tuft or orange points · wheel zoom · F frame";
     const nav = "middle drag orbit · Shift+middle or right drag pan · wheel dolly · F frame · Home head-on · W Level";
     let what = "";
     if (tool === "poly" || tool === "path") {
@@ -10302,7 +10285,6 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
   let fps = 0;
 
   function frame(now: number): void {
-    if (mode === "test") foliageEditor?.tick();
     if (mode === "test" && testLevel) {
       if (lastNow < 0) lastNow = now;
       let dt = (now - lastNow) / 1000;
@@ -10468,24 +10450,13 @@ export function startEditor(canvas: HTMLCanvasElement, sceneCanvas?: HTMLCanvasE
         // the layers (a hash, so a frame where nothing moved rebuilds nothing).
         if (inVisuals()) {
           visuals!.apply();
-          visuals!.guides.group.visible = !foliageEditor?.active;
-          if (!foliageEditor?.active) visuals!.sync(
+          visuals!.sync(
             { model, rev: modelRev, selectedIds, selectedBodyIds, selectedVerts, visibleLayers, lockedLayers },
             polyDraftGuide(),
           );
         }
         if (sceneLevel) scene3d.render(sceneLevel, camera, 1, inVisuals() ? NO_ORBIT : orbit);
-
       }
-
-      foliageEditor?.tick();
-      foliageButton.classList.toggle("active", !!foliageEditor?.active && inVisuals());
-      const foliageOn = !!foliageEditor?.active && inVisuals();
-      inspector.style.display = foliageOn ? "none" : "";
-      toolRow.style.display = foliageOn ? "none" : "";
-      layerList.style.display = foliageOn ? "none" : "";
-      outliner.style.display = foliageOn ? "none" : "";
-      root.classList.toggle("ed-foliage-mode", foliageOn);
       // THE VISUALS WORKSPACE draws nothing on the overlay but its status line:
       // everything the overlay says is in the scene, where it is right from any
       // angle. The canvas still takes the pointer - it is what every press in
@@ -10640,7 +10611,6 @@ function injectStyles(): void {
     gap: 6px; background: rgba(31,36,48,0.92); border: 1px solid #313244; padding: 8px;
     border-radius: 2px; }
   .ed-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .ed-foliage-mode .ed-bar { max-width: calc(100vw - 280px); }
   .ed-btn { background: #2a2f3d; color: #cbccc6; border: 1px solid #3c445c;
     padding: 3px 8px; font-family: monospace; font-size: 13px; cursor: pointer;
     border-radius: 2px; }

@@ -25,7 +25,7 @@ for (const [path, pin] of Object.entries(readManifest())) {
     else kept.push(path);
     continue;
   }
-  const res = await fetch(sourceUrl(path));
+  const res = await fetch(pin.url ?? sourceUrl(path));
   if (!res.ok) {
     failures.push(`${path}: HTTP ${res.status} from ${sourceUrl(path)}`);
     continue;

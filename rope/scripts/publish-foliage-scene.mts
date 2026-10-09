@@ -43,3 +43,32 @@ manifest.river = { ...manifest.river, sha256: hash, bytes: bytes.length,
   url };
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 console.log(`Published ${name} to ${repo}; scene manifest updated.`);
+
+// Artist-owned Blender cards need their editable source and linked guide too.
+if (process.argv.includes('--blender-cards')) {
+  const sourcePins = JSON.parse(readFileSync('scripts/sceneSources.json', 'utf8'));
+  for (const [key, file, prefix] of [
+    ['scenes/river.blend', 'assets-src/scenes/river.blend', 'source-river'],
+    ['scenes/river-guide.blend', 'assets-src/scenes/river-guide.blend', 'source-river-guide'],
+    ['', '.cache/addons/moss_cards.zip', 'blender-moss-cards'],
+  ]) {
+    const data = readFileSync(file);
+    const digest = createHash('sha256').update(data).digest('hex');
+    const extension = file.endsWith('.zip') ? 'zip' : 'blend';
+    const assetName = `${prefix}-${digest.slice(0, 12)}.${extension}`;
+    if (!release.assets.some(a => a.name === assetName)) {
+      const up = await fetch(`${release.upload_url.split('{')[0]}?name=${assetName}`, {
+        method: 'POST', headers: { ...headers, 'Content-Type': 'application/octet-stream' }, body: data,
+      });
+      if (!up.ok) throw new Error(`${assetName} upload failed (${up.status})`);
+    }
+    const assetUrl = `https://github.com/${repo}/releases/download/${tag}/${assetName}`;
+    const verification = await fetch(assetUrl);
+    if (!verification.ok) throw new Error(`${assetName} public download failed (${verification.status})`);
+    if (createHash('sha256').update(new Uint8Array(await verification.arrayBuffer())).digest('hex') !== digest)
+      throw new Error(`${assetName} verification failed`);
+    if (key) sourcePins[key] = { sha256: digest, bytes: data.length, url: assetUrl };
+    console.log(`Published and verified ${assetName}`);
+  }
+  writeFileSync('scripts/sceneSources.json', JSON.stringify(sourcePins, null, 2) + '\n');
+}

@@ -29,6 +29,8 @@ export const MANIFEST = join(ROOT, "scripts", "sceneSources.json");
 export interface SourceAsset {
   sha256: string;
   bytes: number;
+  /** Branch-specific source store; omitted for the shared release. */
+  url?: string;
 }
 
 export function readManifest(): Record<string, SourceAsset> {

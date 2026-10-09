@@ -64,3 +64,8 @@ Checks:
 - bun run scripts/test-moss-fringe.ts
 - bun run typecheck
 - bun run build
+
+Moss rim editing now belongs to the Blender Moss Foliage Cards add-on, not the
+level editor. The river source contains 1,229 artist-owned cards across three
+mounds. Exported `.moss.authored` materials prevent duplicate runtime tufts.
+See [Blender moss cards](blender-moss-cards.md) for placement and reshaping.

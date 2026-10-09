@@ -1,4 +1,3 @@
-import type { FoliageCards } from "./foliageCards";
 // Canonical, hand-editable level format — the single source of truth for the
 // level schema, shared by the runtime loaders (`Level`, `BallLevel`) and the
 // level editor. `levelData.ts` is auto-generated from a Godot scene and stays
@@ -2280,7 +2279,6 @@ export interface LevelData {
   // it crosses `scaleLevelData` unchanged; `SCENE_NAME` in render3d/scenes.ts
   // is what a name may be spelt as (it is a directory and a release asset).
   scene?: string;
-  foliageCards?: FoliageCards;
   // Which revision of this format the level was written in (`LEVEL_FORMAT`).
   // Absent is 1. It exists for the one migration that cannot be read off the
   // data itself (see `withDebugFromGreybox`), and `normalizeLevelData` always
@@ -2417,7 +2415,6 @@ export interface RawLevelData {
   environment?: EnvironmentData;
   camera?: LevelCameraData;
   scene?: string;
-  foliageCards?: FoliageCards;
   format?: number;
 }
 
@@ -3361,7 +3358,6 @@ export function scaleLevelData(rawData: RawLevelData, factor: number): LevelData
       : {}),
     // A name, not a length (see `LevelData.scene`).
     ...(data.scene !== undefined ? { scene: data.scene } : {}),
-    ...(data.foliageCards ? { foliageCards: structuredClone(data.foliageCards) } : {}),
     // A revision number, and always the current one once a level has crossed
     // the gate above.
     ...(data.format !== undefined ? { format: data.format } : {}),

@@ -410,7 +410,7 @@ export class Scene3D {
     // bound nodes land under the roots above when the file arrives, scenery
     // stands in the world where Blender put it.
     if (sceneName) {
-      this.dressing = new SceneDressing(sceneName, targets, (scenery) => this.adoptSceneryWater(scenery), level.visualSource.data.foliageCards);
+      this.dressing = new SceneDressing(sceneName, targets, (scenery) => this.adoptSceneryWater(scenery));
       this.scene.add(this.dressing.root);
     }
     // Then whatever else the world already holds - the avatar's debris, a

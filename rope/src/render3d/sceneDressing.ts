@@ -1,5 +1,3 @@
-import type { FoliageCards } from "../level/foliageCards";
-import { applyMossCardEdits, disposeMossCardEdits } from "./mossCardEdits";
 // The level's Blender scene, loaded and mounted (see docs/blender-scenes.md and
 // `scenes.ts` for what a scene is).
 //
@@ -68,12 +66,11 @@ const SHADOW_Z = -0.05;
 // the file is cached for the page and mounted again on every rebuild (the
 // editor rebuilds on every edit), and geometry and materials are shared
 // between the clones as a pack's props share theirs.
-export function dressScene(loaded: THREE.Object3D, targets: readonly DressTarget[], edits?: FoliageCards): Dressed {
+export function dressScene(loaded: THREE.Object3D, targets: readonly DressTarget[]): Dressed {
   const scenery = new THREE.Group();
   scenery.name = "scenery";
   scenery.userData["pickTag"] = SCENERY_TAG;
   const clone = loaded.clone(true);
-  applyMossCardEdits(clone, edits);
   clone.updateMatrixWorld(true);
 
   const byNode = new Map<string, DressTarget>();
@@ -227,15 +224,20 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // is. This can go once every published scene is re-exported.
           const names = blenderNames(mesh);
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const material of mats) if (/^MossCards(?:\.\d+)?$/.test(material.name)) {
+            material.alphaTest = .25; material.transparent = false; material.alphaToCoverage = true;
+            material.side = THREE.DoubleSide; mesh.castShadow = false;
+          }
           const decal = names.some((n) => /\.(ivy|moss)\.shadow$/.test(n));
-          const legacyIvy = names.some((n) => /\.moss$/.test(n)) && mats.some((m) => m.alphaTest > 0);
+          const mossCards = mats.some(m => /^MossCards(?:\.\d+)?$/.test(m.name));
+          const legacyIvy = !mossCards && names.some((n) => /\.moss$/.test(n)) && mats.some((m) => m.alphaTest > 0);
           const ivy = !decal && (legacyIvy || names.some((n) => /\.ivy$/.test(n)));
           // Plants (the Blender foliage add-on's ferns, sprig bushes and
           // hanging vines) are leaves too, and wear one material, `Foliage`,
           // found by its name, which glTF and the optimiser keep: whatever
           // the plant's object is called, its cards are alpha-cut leaves.
           const foliage = mats.some((m) => /^Foliage(\.\d+)?$/.test(m.name));
-          mesh.castShadow = !decal;
+          mesh.castShadow = !decal && !mats.some(m => /^MossCards(?:\.\d+)?$/.test(m.name));
           mesh.receiveShadow = true;
           // ...and the leaves receive with finer biases than the sun's, so a
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
@@ -274,11 +276,11 @@ export class SceneDressing {
 
   // `landed` is handed the scenery once it is mounted, for what the scene
   // itself still draws over it (the pool's water, `Scene3D.adoptSceneryWater`).
-  constructor(scene: string, targets: readonly DressTarget[], landed?: (scenery: THREE.Group) => void, edits?: FoliageCards) {
+  constructor(scene: string, targets: readonly DressTarget[], landed?: (scenery: THREE.Group) => void) {
     this.root.name = `scene:${scene}`;
     void loadSceneFile(scene).then((loaded) => {
       if (!loaded || this.disposed) return;
-      const dressed = dressScene(loaded, targets, edits);
+      const dressed = dressScene(loaded, targets);
       this.bound = dressed.bound;
       this.unbound = dressed.unbound;
       this.root.add(dressed.scenery);
@@ -301,8 +303,6 @@ export class SceneDressing {
 
   dispose(): void {
     this.disposed = true;
-    disposeMossCardEdits(this.root);
-    for (const node of this.bound.values()) disposeMossCardEdits(node);
     // Geometry and materials are the cached file's, shared with every other
     // mount, so nothing is freed here - as a pack's props are not.
     this.root.clear();

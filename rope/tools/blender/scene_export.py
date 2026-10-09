@@ -953,6 +953,9 @@ def grow_painted(scene, warnings):
         else:
             took = f"rebuilt in {s.build_ms:.0f} ms" if what == "rebuilt" else "kept: built from this paint, rock and code"
             log(f"moss {ob.name} on {s.host}: {s.triangles} triangles, {s.dabs} dabs, print {s.texture} px, {took}")
+    # Artist-owned moss cards are never regenerated or replaced at export.
+    import moss_cards
+    warnings.extend(moss_cards.prepare_export(scene))
     # Plants (the foliage add-on, tools/blender/foliage) grow after the ivy and
     # moss, in their own order, each clear of the plants before it.
     if any(ob.type == "MESH" and ob.get("grown_by") == "foliage" for ob in scene.objects):
@@ -1033,10 +1036,17 @@ def main():
     repaint_slate()
     for ob in scene.objects:
         reason = skip_reason(ob, excluded)
+        if ob.get("grown_by") == "moss_cards" and ob.parent:
+            host_reason = skip_reason(ob.parent, excluded)
+            if host_reason:
+                reason = f"moss host {host_reason}"
         if reason:
             skipped.append({"name": ob.name, "reason": reason})
             continue
         kept.append(ob)
+
+    import moss_cards
+    kept = moss_cards.pack_for_export(kept, bpy.context)
 
     # An empty scene is a legitimate export - the file a level is first wired
     # to, before anything is modelled - so it ships as an empty GLB with a
@@ -1062,7 +1072,7 @@ def main():
     # neighbour is neither in Cycles' rays nor in a rock's cache key, so a fern
     # edited on a rock re-bakes nothing, and no leaf card is baked into the
     # stone's occlusion. The game's own shadows shade the rock under a plant.
-    plants = [ob for ob in kept if ob.get("grown_by") == "foliage"]
+    plants = [ob for ob in kept if ob.get("grown_by") in {"foliage", "moss_cards"}]
     for ob in plants:
         ob.hide_render = True
     try:

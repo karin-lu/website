@@ -16,7 +16,7 @@ for (const node of doc.getRoot().listNodes()) {
   group.matrix.fromArray(node.getMatrix()); group.matrixAutoUpdate=false; objects.set(node,group);
 }
 for (const [node,group] of objects) (objects.get(node.getParentNode()) ?? root).add(group);
-let leaves=0,leafContacts=0,hostContacts=0,tufts=0,mounds=0;
+let leaves=0,leafContacts=0,hostContacts=0,tufts=0,mounds=0,authored=0;
 for (const node of doc.getRoot().listNodes()) {
   for (const prim of node.getMesh()?.listPrimitives() ?? []) {
     const mat = prim.getMaterial()!;
@@ -50,6 +50,13 @@ root.traverse(o=>{
     for (const v of curved.getAttribute('position').array) assert.ok(Number.isFinite(v));
     leaves+=curved.userData.ivyLeafCards; leafContacts+=curved.userData.leafContacts; hostContacts+=curved.userData.hostContacts;
   }
+  if (/^MossCards(?:\.\d+)?$/.test(material.name)) {
+    const geo = o.geometry;
+    assert.ok(geo.index && geo.getAttribute('uv') && geo.getAttribute('color'));
+    assert.equal(geo.index!.count % 18, 0, 'authored cards retain six triangles each');
+    tufts += geo.index!.count / 18; authored++;
+  }
+  if (/\.moss\.authored$/.test(material.name)) mounds++;
   if (/\.moss$/.test(material.name)) {
     const fringe=buildMossFringe(o.geometry,o.matrixWorld,ivyHostSurface(o));
     assert.ok(fringe.userData.mossFringeCards > 0 && fringe.userData.mossFringeCards <= 1400);
@@ -58,5 +65,5 @@ root.traverse(o=>{
     console.log(`${o.parent!.name}: ${fringe.userData.mossFringeCards} moss edge cards`);
   }
 });
-assert.equal(mounds,3); assert.ok(leaves>1000); assert.ok(leafContacts>1000); assert.ok(hostContacts>0);
+assert.equal(mounds,3); if(authored) assert.equal(authored,3); assert.ok(leaves>1000); assert.ok(leafContacts>1000); assert.ok(hostContacts>0);
 console.log(`Original river layers passed: ${leaves} curved leaves, ${leafContacts} leaf/underlay contacts, ${hostContacts} rock contacts, ${tufts} moss tufts.`);
