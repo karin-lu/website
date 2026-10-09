@@ -19,17 +19,17 @@ lighten by 6%; the reference atlas contributes its cutout silhouette and slight
 texture detail rather than a dark grayscale band. Normals are interpolated from
 the mound so the join also shares its lighting.
 
-Rock-hugging ivy bushes have blades at least 2–2.4 times their exported size,
-with a size floor for tiny cards (growth is capped at four times). A rounded
-3.5 cm arch and varied 8.5–15.5 cm outward shoots expand the silhouette beyond
-the flat carpet. Shoots follow the host's outward direction, with some inherited
-stem direction and a gentle upward bias. Roots remain seated and tips curl softly.
-Every card
-in an ivy carpet receives one or two rotated companions at the same
-seated stalk. Companions reuse the original painted leaf UVs and colours,
-with per-leaf warm/cool green variation. Bases are shaded to 88–100% of their
-painted colour, fading toward 118–136% at the exposed tips. The greenery grows in overlapping layers around
-the rock rather than adding broad leaves to the separate fern clumps.
+Rock-hugging ivy bushes retain a compact inner carpet at 1.25–1.45 times the
+exported leaf size. Sparse outer fans grow along the visible silhouette, at
+most one per 18 cm cell, with at least 14 cm between fan roots. Each fan adds
+one rotated outer blade, sized 1.65–2.4 times the export. A soft arch and short
+3.5–6.5 cm extension follow its original stem with an outward lean; the tip
+droops gently under gravity. This replaces duplicates at every root and the
+uniform, oversized outward push that made the bushes tangled and stiff.
+Neighbouring leaves share subtle warm/cool green variation. Bases remain
+shaded (91–95% of their painted colour); inner tips stay muted (101–104%)
+while the exposed outer layer is lighter (113–120%). Companions reuse the
+painted leaf atlas. Fern clumps retain their own leaf shapes.
 Ferns retain their published geometry. Companion cards share the ivy material
 and mesh, so they do not introduce additional draw calls.
 Host lookup traverses the unnamed groups inserted by the glTF exporter before

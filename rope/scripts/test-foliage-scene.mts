@@ -42,6 +42,11 @@ root.traverse(o=>{
     assert.ok(host, `the rock host is found through unnamed groups for ${o.parent!.parent!.name}`);
     const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host);
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');
+    const roots = curved.userData.rockBushFanRoots as number[][];
+    for (let i=0;i<roots.length;i++) for (let j=0;j<i;j++) {
+      assert.ok(new THREE.Vector3().fromArray(roots[i]).distanceTo(new THREE.Vector3().fromArray(roots[j])) >= .13999,
+        'outer fans keep room between their roots, including across cell boundaries');
+    }
     for (const v of curved.getAttribute('position').array) assert.ok(Number.isFinite(v));
     leaves += curved.userData.ivyLeafCards;
     companions += curved.userData.rockBushCompanionLeaves;
@@ -54,5 +59,6 @@ root.traverse(o=>{
     console.log(`${o.parent!.name}: ${fringe.userData.mossFringeCards} moss edge cards`);
   }
 });
-assert.equal(mounds,3); assert.ok(leaves>1000); assert.ok(companions>1000);
+assert.equal(mounds,3); assert.ok(leaves>1000);
+assert.ok(companions>20 && companions < leaves * .25, 'outer fans are sparse over a compact inner carpet');
 console.log(`Published river scene passed: ${leaves} curved leaf cards including ${companions} rooted companions, ${tufts} edge tufts across ${mounds} moss mounds.`);

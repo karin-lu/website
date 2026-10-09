@@ -15,9 +15,10 @@ assert.equal(curved.getAttribute('position').count, 15);
 assert.equal(curved.index!.count, 48);
 assert.ok(curved.getAttribute('position').getZ(4) < .02, 'leaf base settles against the rock');
 assert.ok(curved.getAttribute('position').getZ(7) > curved.getAttribute('position').getZ(4), 'leaf rises from its attachment');
-assert.ok(curved.getAttribute('position').getZ(13) > .04, 'outer tip grows away from the host');
-assert.ok(curved.getAttribute('color').getY(13) > curved.getAttribute('color').getY(4) * 1.15,
-  'outer leaves brighten gradually from the shaded root');
+assert.ok(curved.getAttribute('position').getZ(13) >= .0019 && curved.getAttribute('position').getZ(13) < .04,
+  'inner carpet tips stay compact and clear of the rock');
+assert.ok(curved.getAttribute('color').getY(13) > curved.getAttribute('color').getY(4) * 1.05,
+  'inner leaves have a restrained gradient from the shaded root');
 for (const value of curved.getAttribute('position').array) assert.ok(Number.isFinite(value));
 for (let i = 0; i < 15; i++) {
   assert.ok(curved.getAttribute('position').getZ(i) >= .0019, 'no rock penetration');

@@ -25,6 +25,8 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   for (const key of Object.keys(source.attributes)) values[key] = [];
   const triangles: number[] = [], replaced = new Set<number>();
   let count = 0, leafCards = 0, companionLeaves = 0;
+  const outerFans = new Set<string>();
+  const fanRoots: THREE.Vector3[] = [];
   const get = (id: number) => new THREE.Vector3().fromBufferAttribute(position, id).applyMatrix4(world);
   for (const ids of components.values()) {
     if (ids.length !== 4) continue;
@@ -54,39 +56,48 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       pull.subVectors(target, anchor);
     }
     const curl = .09 + .07 * rand(2401, a!, 1), fold = .07 + .06 * rand(2401, a!, 2);
-    // Add companion leaves to the rock carpet, sharing the original texture
-    // and attachment. Ferns use a different material and never enter this pass.
-    const copies = components.size > 16 ? (rand(3197, a!, 4) < .35 ? 3 : 2) : 1;
+    const outward = (hit?.normal ?? normal).clone();
+    const seated = anchor.clone().add(pull);
+    const cell = [seated.x, seated.y, seated.z].map(v => Math.floor(v / .18));
+    const fanKey = cell.join(',');
+    // A compact original carpet fills the rock. Only well-spaced locations
+    // facing the silhouette get an outer blade; never duplicate every root.
+    const fan = components.size > 16 && Math.hypot(outward.x, outward.y) > .35 && !outerFans.has(fanKey)
+      && fanRoots.every(root => root.distanceToSquared(seated) >= .14 * .14);
+    if (fan) { outerFans.add(fanKey); fanRoots.push(seated); }
+    const copies = fan ? 2 : 1;
     leafCards += copies; companionLeaves += copies - 1;
     const rows = [0, base, .4, .7, 1];
     const geometric = points[1]!.clone().sub(points[0]!).cross(top.clone().sub(bottom));
     const reverse = geometric.dot(normal) * Math.sign(world.determinant()) < 0;
     for (let copy = 0; copy < copies; copy++) {
       const offset = count;
-      const turn = copy ? (copy === 1 ? -.65 : .65) + (rand(3197, a!, 5) - .5) * .5 : 0;
-      // A dense carpet can hide larger cards behind the same flat outline.
-      // Give its blades a readable size and an outward, rounded silhouette.
-      const size = Math.min(4, Math.max(copy ? 2.0 + .35 * rand(3197, a!, 6) : 2.4, .16 / height));
-      const outward = (hit?.normal ?? normal).clone();
+      const turn = copy ? (rand(3197, a!, 5) - .5) * .8 : 0;
+      const size = copy ? Math.min(2.4, Math.max(1.65 + .3 * rand(3197, a!, 6), .11 / height))
+        : 1.25 + .20 * rand(3197, a!, 6);
       const shoot = top.clone().sub(bottom).normalize().applyAxisAngle(normal, turn);
       // Grow away from the host, with some inherited stem direction and a
       // gentle upward bias. Each layer opens at a different angle and reach.
-      shoot.addScaledVector(outward, 1.8).add(new THREE.Vector3(0, .18, 0)).normalize();
-      const reach = .085 + .070 * rand(3197, a!, 11 + copy);
-      const colourVariation = rand(3197, a!, 21 + copy);
-      const rootShade = .88 + .12 * colourVariation;
-      const tipShade = 1.18 + .18 * colourVariation;
-      const warmth = (rand(3197, a!, 31 + copy) - .5) * .10;
+      shoot.addScaledVector(outward, .65).normalize();
+      const reach = copy ? .035 + .030 * rand(3197, a!, 11) : .008;
+      // Neighbouring leaves share a restrained tint; the exposed layer is
+      // lighter as a whole rather than randomly mottled throughout the bush.
+      const cluster = cell[0]! * 7387 + cell[1]! * 1933 + cell[2]! * 967;
+      const colourVariation = rand(3197, cluster, 21);
+      const rootShade = .91 + .04 * colourVariation;
+      const tipShade = copy ? 1.13 + .07 * colourVariation : 1.01 + .03 * colourVariation;
+      const warmth = (rand(3197, cluster, 31) - .5) * .04;
       for (const s of rows) for (const u of [0, .5, 1]) {
         const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
         const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
         // Grow from the seated stalk, so a larger leaf cannot lift its root.
         p.sub(anchor).multiplyScalar(size).applyAxisAngle(normal, turn).add(anchor);
         const t = Math.max(0, (s - base) / (1 - base));
-        p.add(pull).addScaledVector(normal, height * ((copy ? .40 : .30) * Math.sin(Math.PI * t) - .3 * curl * t * t)
+        p.add(pull).addScaledVector(normal, height * ((copy ? .18 : .10) * Math.sin(Math.PI * t) - .2 * curl * t * t)
           + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t)
-          + .035 * Math.sin(Math.PI * t));
+          + (copy ? .025 : .009) * Math.sin(Math.PI * t));
         p.addScaledVector(shoot, reach * t * t * (3 - 2 * t));
+        if (copy) p.y -= .025 * t * t * t;
         // The same surface projection used by vines prevents curling into stone.
         rock?.project(p, s <= base ? .002 : .005);
         p.applyMatrix4(inverse);
@@ -136,6 +147,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   geometry.userData.curvedIvy = true;
   geometry.userData.ivyLeafCards = leafCards;
   geometry.userData.rockBushCompanionLeaves = companionLeaves;
+  geometry.userData.rockBushFanRoots = fanRoots.map(root => root.toArray());
   return geometry;
 }
 
