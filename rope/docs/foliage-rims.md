@@ -19,9 +19,17 @@ lighten by 12%; the reference atlas contributes its cutout silhouette and slight
 texture detail rather than a dark grayscale band. Normals are interpolated from
 the mound so the join also shares its lighting.
 
-Bushes and ferns are enlarged by 30% about the dark crown in the solid atlas cell.
+Bushes and ferns are enlarged by 45% about the dark crown in the solid atlas cell.
 Their compressed position attributes are decoded to floats before enlargement.
 Ivy blades spread 22% farther from their seated stalk and have a fuller arch.
+Broad painted vine leaves fill out the bush on short petioles joined to its
+solid support geometry. They reuse the plant's packed atlas, with muted green
+tints and curved blades. The published scene adds 21–32 leaves per bush.
+
+Moss edge cards are 4.5–10 cm tall, with irregular spacing and lean. Both ends
+of each card's lower two rows conform to the moss cushion and sink into it;
+an alpha ramp removes the exposed rectangular foot. This avoids floating
+corners and the continuous serrated strip along a ledge.
 
 Cards ride their original host and have no collision. The budget is at most
 600 cards per mound, distributed around its rim, with one draw call per mound.

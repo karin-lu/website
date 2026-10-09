@@ -11,11 +11,12 @@ const fringe = buildMossFringe(patch, new THREE.Matrix4());
 assert.ok(fringe.userData.mossFringeCards > 15 && fringe.userData.mossFringeCards < 60);
 const positions = fringe.getAttribute('position');
 for (const v of positions.array) assert.ok(Number.isFinite(v));
-for (let i = 0; i < positions.count; i += 6) {
+for (let i = 0; i < positions.count; i += 8) {
   const x = (positions.getX(i) + positions.getX(i + 1)) / 2;
   const y = (positions.getY(i) + positions.getY(i + 1)) / 2;
-  assert.ok(Math.min(Math.abs(x), Math.abs(x - 1), Math.abs(y), Math.abs(y - .5)) < .06,
+  assert.ok(Math.min(Math.abs(x), Math.abs(x - 1), Math.abs(y), Math.abs(y - .5)) < .08,
     'tufts stay near the exterior rim, never the internal UV seam');
+  assert.ok(positions.getZ(i) < 0 && positions.getZ(i + 1) < 0, 'both ends of every card base are buried');
 }
 assert.deepEqual(positions.array, buildMossFringe(patch, new THREE.Matrix4()).getAttribute('position').array);
 const translated = buildMossFringe(patch, new THREE.Matrix4().makeTranslation(2, 3, 4));

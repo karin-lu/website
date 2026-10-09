@@ -6,6 +6,8 @@ import { curveIvyGeometry } from '../src/render3d/ivyGeometry';
 import { ivyHostSurface } from '../src/render3d/ivyGeometry';
 import { buildMossFringe } from '../src/render3d/mossFringe';
 import assert from 'node:assert/strict';
+import { fullerBushGeometry } from '../src/render3d/bushVolume';
+import { buildVineBushLeaves } from '../src/render3d/vineBushLeaves';
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.decoder':MeshoptDecoder});
 const doc = await io.read('public/scenes/river/scene.glb');
@@ -37,6 +39,14 @@ root.updateMatrixWorld(true);
 root.traverse(o=>{
   if (!(o instanceof THREE.Mesh)) return;
   const material = o.material as THREE.Material;
+  if (material.name === 'Foliage' && /\.fern(\.\d+)?$/.test(o.parent!.name)) {
+    const bush = fullerBushGeometry(o.geometry);
+    const additions = buildVineBushLeaves(bush, o.matrixWorld, ivyHostSurface(o));
+    console.log(`${o.parent!.name}: ${additions.userData.vineBushLeaves} connected vine leaves`);
+    assert.ok(additions.userData.vineBushLeaves >= 6 && additions.userData.vineBushLeaves <= 32);
+    for (const v of additions.getAttribute('position').array) assert.ok(Number.isFinite(v));
+    for (const v of additions.getAttribute('uv').array) assert.ok(v >= 0 && v <= 1);
+  }
   if (/^Ivy(Clumps)?$/.test(material.name)) {
     const curved=curveIvyGeometry(o.geometry,o.matrixWorld,ivyHostSurface(o));
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');

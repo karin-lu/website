@@ -4,7 +4,7 @@ import * as THREE from "three";
  * Quantized glTF positions must become floats before growing beyond [-1,1].
  * The optimizer can move the origin, so infer the crown from the solid atlas
  * cell and darkest support colour instead of scaling about the mesh origin. */
-export function fullerBushGeometry(source: THREE.BufferGeometry, scale = 1.3): THREE.BufferGeometry {
+export function fullerBushGeometry(source: THREE.BufferGeometry, scale = 1.45): THREE.BufferGeometry {
   const position = source.getAttribute("position"), uv = source.getAttribute("uv"), colour = source.getAttribute("color");
   if (!position || source.userData.fullerBush) return source;
   const solid = new Map<string, number[]>();
