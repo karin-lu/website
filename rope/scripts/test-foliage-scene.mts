@@ -5,9 +5,6 @@ import * as THREE from 'three';
 import { curveIvyGeometry } from '../src/render3d/ivyGeometry';
 import { ivyHostSurface } from '../src/render3d/ivyGeometry';
 import { buildMossFringe } from '../src/render3d/mossFringe';
-import { buildBushSupport } from '../src/render3d/bushSupport';
-import { buildBushLeafCover } from '../src/render3d/bushLeafCover';
-import { VineSurface } from '../src/render3d/ivySurface';
 import assert from 'node:assert/strict';
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.decoder':MeshoptDecoder});
@@ -19,7 +16,7 @@ for (const node of doc.getRoot().listNodes()) {
   group.matrix.fromArray(node.getMatrix()); group.matrixAutoUpdate=false; objects.set(node,group);
 }
 for (const [node,group] of objects) (objects.get(node.getParentNode()) ?? root).add(group);
-let leaves=0,companions=0,tufts=0,mounds=0,cushions=0;
+let leaves=0,leafContacts=0,hostContacts=0,tufts=0,mounds=0;
 for (const node of doc.getRoot().listNodes()) {
   for (const prim of node.getMesh()?.listPrimitives() ?? []) {
     const mat = prim.getMaterial()!;
@@ -43,46 +40,15 @@ root.traverse(o=>{
   if (/^Ivy(Clumps)?$/.test(material.name)) {
     const host=ivyHostSurface(o);
     assert.ok(host, `the rock host is found through unnamed groups for ${o.parent!.parent!.name}`);
-    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host,true);
-    const before = curved.getAttribute('position').count;
-    const cushion = buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38'));
-    const cover=buildBushLeafCover(cushion,curved,o.matrixWorld);
-    assert.ok(cover.userData.cameraCoverCards>0, 'every bush has camera-facing leaf coverage');
-    const soup: number[]=[];
-    const p=new THREE.Vector3(), supportPosition=cushion.getAttribute('position');
-    for (let i=0;i<supportPosition.count;i++) p.fromBufferAttribute(supportPosition,i).applyMatrix4(o.matrixWorld).toArray(soup,soup.length);
-    const backingSurface=new VineSurface(soup);
-    for (let card=0;card<cover.userData.cameraCoverCards;card+=7) for (const vertex of [4,6,7,8,10,13]) {
-      p.fromBufferAttribute(cover.getAttribute('position'),card*15+vertex).applyMatrix4(o.matrixWorld);
-      assert.ok(backingSurface.nearest(p)!.signed >= .0058, 'visible leaves clear the backing surface');
-    }
-    for (const root of cover.userData.bushLeafRoots as number[][]) {
-      const contact=backingSurface.nearest(new THREE.Vector3().fromArray(root))!;
-      assert.ok(contact.distance<=.00601, 'each leaf grows directly on the blob surface');
-    }
-    assert.ok(cushion.userData.bushSupportLobes > 0, 'every rock bush receives solid support');
-    assert.equal(cushion.userData.bushSupportLobes, 1, 'the support is a fused surface instead of separate lobes');
-    assert.equal(cushion.userData.continuousBushSupport, true);
-    const backingColour = cushion.getAttribute('color');
-    for (let i=1;i<backingColour.count;i++) for (let channel=0;channel<3;channel++) {
-      assert.equal(backingColour.getComponent(i,channel), backingColour.getComponent(0,channel),
-        'one consistent green palette covers the whole backing');
-    }
-    for (const value of cushion.getAttribute('position').array) assert.ok(Number.isFinite(value));
-    assert.equal(curved.getAttribute('position').count, before, 'support adds no leaf cards');
-    assert.deepEqual(cushion.getAttribute('position').array,
-      buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38')).getAttribute('position').array,
-      'the organic support remains stable between loads');
-    cushions++;
+    const curved=curveIvyGeometry(o.geometry,o.matrixWorld,host);
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');
-    const roots = curved.userData.rockBushFanRoots as number[][];
-    for (let i=0;i<roots.length;i++) for (let j=0;j<i;j++) {
-      assert.ok(new THREE.Vector3().fromArray(roots[i]).distanceTo(new THREE.Vector3().fromArray(roots[j])) >= .13999,
-        'outer fans keep room between their roots, including across cell boundaries');
+    assert.equal(curved.userData.attachments.length,curved.userData.ivyLeafCards,'every leaf has support');
+    for (const attachment of curved.userData.attachments) {
+      assert.ok(Math.abs(new THREE.Vector3().fromArray(attachment.point).distanceTo(new THREE.Vector3().fromArray(attachment.supportPoint))-.002)<1e-5,
+        'the stalk meets its support with 2 mm clearance');
     }
     for (const v of curved.getAttribute('position').array) assert.ok(Number.isFinite(v));
-    leaves += curved.userData.ivyLeafCards;
-    companions += curved.userData.rockBushCompanionLeaves;
+    leaves+=curved.userData.ivyLeafCards; leafContacts+=curved.userData.leafContacts; hostContacts+=curved.userData.hostContacts;
   }
   if (/\.moss$/.test(material.name)) {
     const fringe=buildMossFringe(o.geometry,o.matrixWorld,ivyHostSurface(o));
@@ -92,7 +58,5 @@ root.traverse(o=>{
     console.log(`${o.parent!.name}: ${fringe.userData.mossFringeCards} moss edge cards`);
   }
 });
-assert.equal(mounds,3); assert.ok(leaves>1000);
-assert.equal(cushions,5, 'all five ivy bushes get a green cushion');
-assert.ok(companions>20 && companions < leaves * .25, 'outer fans are sparse over a compact inner carpet');
-console.log(`Published river scene passed: ${leaves} curved leaf cards including ${companions} rooted companions, ${tufts} edge tufts across ${mounds} moss mounds.`);
+assert.equal(mounds,3); assert.ok(leaves>1000); assert.ok(leafContacts>1000); assert.ok(hostContacts>0);
+console.log(`Original river layers passed: ${leaves} curved leaves, ${leafContacts} leaf/underlay contacts, ${hostContacts} rock contacts, ${tufts} moss tufts.`);

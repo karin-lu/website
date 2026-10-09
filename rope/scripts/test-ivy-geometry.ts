@@ -15,27 +15,30 @@ assert.equal(curved.getAttribute('position').count, 15);
 assert.equal(curved.index!.count, 48);
 assert.ok(curved.getAttribute('position').getZ(4) < .02, 'leaf base settles against the rock');
 assert.ok(curved.getAttribute('position').getZ(7) > curved.getAttribute('position').getZ(4), 'leaf rises from its attachment');
-assert.ok(curved.getAttribute('position').getZ(13) >= .06 && curved.getAttribute('position').getZ(13) < .09,
-  'inner carpet tips sit over the rounded support and stay clear of the rock');
-assert.ok(curved.getAttribute('color').getY(13) > curved.getAttribute('color').getY(4) * 1.05,
-  'inner leaves have a restrained gradient from the shaded root');
+assert.ok(curved.getAttribute('position').getZ(13) < curved.getAttribute('position').getZ(10), 'tip curls down');
 for (const value of curved.getAttribute('position').array) assert.ok(Number.isFinite(value));
 for (let i = 0; i < 15; i++) {
   assert.ok(curved.getAttribute('position').getZ(i) >= .0019, 'no rock penetration');
   assert.ok(curved.getAttribute('uv').getX(i) >= 0 && curved.getAttribute('uv').getX(i) <= .191);
-  assert.ok(curved.getAttribute('color').getY(i) >= .52 && curved.getAttribute('color').getY(i) <= .82,
-    'green variation stays within a natural range');
+  assert.ok(Math.abs(curved.getAttribute('color').getY(i) - .6) < .00001);
 }
 assert.deepEqual(curved.getAttribute('position').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('position').array);
-assert.deepEqual(curved.getAttribute('color').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('color').array);
 assert.equal(curveIvyGeometry(curved, new THREE.Matrix4(), rock), curved, 'no repeated bending');
 assert.equal(card.getAttribute('position').count, 4, 'source remains intact');
 const stem = card.clone(); stem.setAttribute('uv', new THREE.Float32BufferAttribute(Array(8).fill(.99), 2));
 assert.equal(curveIvyGeometry(stem, new THREE.Matrix4(), rock), stem, 'constant UV support geometry is retained');
 const mirrored = curveIvyGeometry(card, new THREE.Matrix4().makeScale(-1, 1, 1), rock);
 assert.ok(mirrored.getAttribute('normal').getZ(7) > 0, 'mirrored hosts retain the correct leaf winding');
-const raised = card.clone(); raised.translate(0, 0, .18);
-const rooted = curveIvyGeometry(raised, new THREE.Matrix4(), rock);
-assert.ok(Math.abs(rooted.getAttribute('position').getZ(4) - .002) < 1e-6,
-  'raised bush sheets attach to their host without the old capped-pull gap');
-console.log('Curved ivy attachment, texture preservation, deterministic shape and collision checks passed.');
+const stacked = new THREE.BufferGeometry();
+const upper=card.clone(); upper.translate(0,.08,.07);
+for (const name of Object.keys(card.attributes)) stacked.setAttribute(name,new THREE.Float32BufferAttribute([
+  ...card.getAttribute(name).array,...upper.getAttribute(name).array],card.getAttribute(name).itemSize));
+stacked.setIndex([0,1,3,0,3,2,4,5,7,4,7,6]);
+const layered=curveIvyGeometry(stacked,new THREE.Matrix4(),rock,()=>true);
+assert.equal(layered.userData.ivyLeafCards,2,'original leaf count is retained');
+assert.equal(layered.userData.leafContacts,1,'the upper stalk rests on the lower leaf');
+assert.ok(layered.getAttribute('position').getZ(19)>.004,'the original upper layer is supported above the rock');
+const masked=curveIvyGeometry(stacked,new THREE.Matrix4(),rock,()=>false);
+assert.equal(masked.userData.leafContacts,0,'transparent atlas pixels cannot support a stalk');
+assert.equal(masked.userData.hostContacts,2,'unsupported stalks fall back to a real host');
+console.log('Original leaf layers, alpha-aware attachments, texture preservation and clearance checks passed.');

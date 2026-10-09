@@ -19,9 +19,9 @@ import { gltfLoader, trackPending } from "./assets";
 import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
 import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
-import { addMossFringes, mossColourSampler } from "./mossFringe";
-import { buildBushSupport } from "./bushSupport";
-import { buildBushLeafCover } from "./bushLeafCover";
+import { addMossFringes } from "./mossFringe";
+import { leafOpacitySampler } from './leafSupport';
+
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -197,13 +197,6 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
         let ivyMeshes = 0;
         let foliageMeshes = 0;
         gltf.scene.updateMatrixWorld(true);
-        const bushSupports: THREE.Mesh[] = [];
-        let fuzzyLeafMaterial: THREE.Material | undefined;
-        gltf.scene.traverse(o => {
-          if (!(o instanceof THREE.Mesh)) return;
-          const materials = Array.isArray(o.material) ? o.material : [o.material];
-          fuzzyLeafMaterial ??= materials.find(m => m.name === 'Ivy');
-        });
         gltf.scene.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
@@ -244,18 +237,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // ...and the leaves receive with finer biases than the sun's, so a
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
           if (ivy || foliage) {
-            if (ivy) {
-              const clump = mats.some(m => m.name === 'IvyClumps');
-              if (clump && fuzzyLeafMaterial) {
-                mesh.material = fuzzyLeafMaterial.clone();
-                mats.splice(0, mats.length, mesh.material);
-              }
-              mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh), clump && !!fuzzyLeafMaterial);
-              if (mesh.geometry.userData.ivySupportSites?.length) bushSupports.push(mesh);
-              for (const m of mats) {
-                if (m.alphaTest > 0) { m.alphaTest = .25; m.alphaToCoverage = true; }
-              }
-            }
+            if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh), leafOpacitySampler(mats[0] as THREE.MeshStandardMaterial));
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
             else foliageMeshes++;
@@ -264,17 +246,6 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
         if (ivyMeshes > 0) console.log(`[render3d] scene "${scene}": ${ivyMeshes} ivy meshes cast and receive leaf shadows`);
         if (foliageMeshes > 0) console.log(`[render3d] scene "${scene}": ${foliageMeshes} plant meshes cast and receive leaf shadows`);
         await addMossFringes(gltf.scene, ivyHostSurface);
-        const cushionMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
-        cushionMaterial.name = 'Bush green cushion';
-        for (const bush of bushSupports) {
-          const leafMaterial = (Array.isArray(bush.material) ? bush.material[0] : bush.material) as THREE.MeshStandardMaterial;
-          const geometry = buildBushSupport(bush.geometry, bush.matrixWorld, mossColourSampler(leafMaterial));
-          if (!geometry.userData.bushSupportLobes) { geometry.dispose(); continue; }
-          bush.geometry = buildBushLeafCover(geometry, bush.geometry, bush.matrixWorld);
-          const cushion = new THREE.Mesh(geometry, cushionMaterial);
-          cushion.name = 'Bush green cushion'; cushion.receiveShadow = true; cushion.castShadow = false;
-          bush.add(cushion);
-        }
         return gltf.scene as THREE.Object3D;
       })
       .catch((err: unknown) => {
