@@ -18,6 +18,7 @@ import type { Vec2 } from "../engine/vec2";
 import { gltfLoader, trackPending } from "./assets";
 import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
+import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -192,6 +193,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
       .then((gltf) => {
         let ivyMeshes = 0;
         let foliageMeshes = 0;
+        gltf.scene.updateMatrixWorld(true);
         gltf.scene.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
@@ -232,6 +234,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // ...and the leaves receive with finer biases than the sun's, so a
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
           if (ivy || foliage) {
+            if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh));
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
             else foliageMeshes++;
