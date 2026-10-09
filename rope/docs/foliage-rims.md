@@ -15,25 +15,26 @@ spacing, atlas cell and tint vary deterministically. Soft surface-biased normals
 dark bases and a shared material help the fringe read as part of the cushion.
 Tuft colours are sampled from each mound's painted texture at their attachment,
 including its glTF UV transform. Roots match the local moss and tips gradually
-lighten by 12%; the reference atlas contributes its cutout silhouette and slight
+lighten by 6%; the reference atlas contributes its cutout silhouette and slight
 texture detail rather than a dark grayscale band. Normals are interpolated from
 the mound so the join also shares its lighting.
 
-Rock-hugging ivy bushes have 32% larger blades and a fuller arch. About 45%
-of their existing cards receive a smaller, rotated companion at the same
-seated stalk. Companions reuse the original painted leaf UVs and colours,
+Rock-hugging ivy bushes have 80% larger blades and a fuller arch. Every card
+in an ivy carpet receives one or two rotated companions at the same
+seated stalk, sized 45–70% larger than the original export. Companions reuse the original painted leaf UVs and colours,
 with slightly shaded bases. The greenery grows in overlapping layers around
 the rock rather than adding broad leaves to the separate fern clumps.
 Ferns retain their published geometry. Companion cards share the ivy material
 and mesh, so they do not introduce additional draw calls.
 
-Moss edge cards are 4.5–10 cm tall, with irregular spacing and lean. Both ends
-of each card's lower two rows conform to the moss cushion and sink into it;
-an alpha ramp removes the exposed rectangular foot. This avoids floating
-corners and the continuous serrated strip along a ledge.
+Moss edge cards are 6–12 cm tall, with irregular lean and overlapping placement
+every 4.5 cm. Downward-facing rims also receive moss, filling the lower outline.
+Both ends of each card's lower two rows conform to the moss cushion: the bottom
+row is buried and the visible root sits within 1 mm of the surface. The alpha
+ramp finishes at this root row, preventing a transparent gap under the tuft.
 
 Cards ride their original host and have no collision. The budget is at most
-600 cards per mound, distributed around its rim, with one draw call per mound.
+1400 cards per mound, distributed around its rim, with one draw call per mound.
 
 `src/render3d/assets/moss-tuft-atlas.png` is the `T_MossTuft_Atlas.png` supplied by
 the user in `files.zip` on 2026-10-09. The accompanying moss render, breakdown,

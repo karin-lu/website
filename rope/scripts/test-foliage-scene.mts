@@ -46,7 +46,7 @@ root.traverse(o=>{
   }
   if (/\.moss$/.test(material.name)) {
     const fringe=buildMossFringe(o.geometry,o.matrixWorld,ivyHostSurface(o));
-    assert.ok(fringe.userData.mossFringeCards > 0 && fringe.userData.mossFringeCards <= 600);
+    assert.ok(fringe.userData.mossFringeCards > 0 && fringe.userData.mossFringeCards <= 1400);
     for (const v of fringe.getAttribute('position').array) assert.ok(Number.isFinite(v));
     tufts+=fringe.userData.mossFringeCards; mounds++;
     console.log(`${o.parent!.name}: ${fringe.userData.mossFringeCards} moss edge cards`);

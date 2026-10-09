@@ -64,25 +64,24 @@ export function buildMossFringe(source: THREE.BufferGeometry, world: THREE.Matri
     const silhouette = edge.faces.some(f => f.normal.z > .12) && edge.faces.some(f => f.normal.z <= .12);
     if (!boundary && !silhouette) continue;
     const face = edge.faces.reduce((a, b) => a.normal.z > b.normal.z ? a : b);
-    if (face.normal.z < -.15 || face.normal.y < -.65) continue;
+    if (face.normal.z < -.15) continue;
     const a = points[edge.a], b = points[edge.b], length = a.distanceTo(b);
-    const steps = Math.ceil(length / .085);
-    for (let k = 0; k < steps && card < 600; k++) {
-      if (rand(seed, n * 101 + k, 8) < .26) continue; // clumps and breathing gaps
+    const steps = Math.ceil(length / .045);
+    for (let k = 0; k < steps && card < 1400; k++) {
       const t = (k + .22 + .55 * rand(seed, n * 101 + k, 1)) / steps;
       const p = a.clone().lerp(b, t);
       const inward = face.centre.clone().sub(p).normalize();
       // The dark base overlaps the mound instead of sitting above its outline.
-      p.addScaledVector(inward, .020 + .020 * rand(seed, n * 101 + k, 9));
-      const key = [p.x, p.y, p.z].map((v, j) => Math.round((v - points[0].getComponent(j)) / .045)).join(",");
+      p.addScaledVector(inward, .012 + .012 * rand(seed, n * 101 + k, 9));
+      const key = [p.x, p.y, p.z].map((v, j) => Math.round((v - points[0].getComponent(j)) / .025)).join(",");
       if (occupied.has(key)) continue;
       occupied.add(key);
       const r = rand(seed, n * 101 + k, 2);
-      const width = .085 + r * .080, height = .045 + rand(seed, n * 101 + k, 3) * .055;
+      const width = .105 + r * .080, height = .060 + rand(seed, n * 101 + k, 3) * .060;
       // Spread along the rock's rim, with a slight upward lift. Face +z, the
       // side-scroller camera, rather than copying an edge-on ground card.
       const up = face.normal.clone().multiplyScalar(.7).addScaledVector(inward, boundary ? -.5 : 0);
-      up.z = 0; up.y += .28;
+      up.z = 0; up.y += boundary ? .10 : .28;
       if (up.lengthSq() < .05) up.set(0, 1, 0);
       up.normalize();
       up.applyAxisAngle(new THREE.Vector3(0, 0, 1), (rand(seed, n * 101 + k, 10) - .5) * .7);
@@ -112,14 +111,14 @@ export function buildMossFringe(source: THREE.BufferGeometry, world: THREE.Matri
           // Conform the whole foot to the cushion, hiding rectangular bases
           // even at corners where the two ends would otherwise hang in air.
           const foot = mossSurface?.nearest(vertex);
-          if (foot) vertex.copy(foot.point).addScaledVector(foot.normal, row === 0 ? -.006 : -.002);
+          if (foot) vertex.copy(foot.point).addScaledVector(foot.normal, row === 0 ? -.006 : .001);
         } else rock?.project(vertex, .004);
         vertex.applyMatrix4(inverse);
         positions.push(vertex.x, vertex.y, vertex.z); normals.push(normal.x, normal.y, normal.z);
         uvs.push(cell[0] + side * cell[2], cell[1] + v * cell[3]);
         heights.push(v);
         // The root matches its own patch; tips gently lighten from that colour.
-        const shade = 1 + .12 * v * v;
+        const shade = 1 + .06 * v * v;
         colours.push(tint.r * shade, tint.g * shade, tint.b * shade);
       }
       for (let row = 0; row < rows.length - 1; row++) {
@@ -173,7 +172,7 @@ export async function addMossFringes(root: THREE.Object3D, surfaceFor: (mesh: TH
   const atlas = await new THREE.TextureLoader().loadAsync(new URL("./assets/moss-tuft-atlas.png", import.meta.url).href);
   atlas.colorSpace = THREE.SRGBColorSpace;
   const material = new THREE.MeshStandardMaterial({ map: atlas, vertexColors: true,
-    side: THREE.DoubleSide, alphaTest: .35, alphaToCoverage: true, roughness: 1, metalness: 0 });
+    side: THREE.DoubleSide, alphaTest: .25, alphaToCoverage: true, roughness: 1, metalness: 0 });
   material.name = "Moss edge tufts";
   // The reference atlas has a dark grayscale base. Use its alpha/silhouette
   // and mild texture detail, keeping the sampled moss colour at the join.
@@ -184,11 +183,11 @@ export async function addMossFringes(root: THREE.Object3D, surfaceFor: (mesh: TH
     shader.fragmentShader = shader.fragmentShader.replace("#include <map_fragment>", `
       #ifdef USE_MAP
         vec4 tuft = texture2D( map, vMapUv );
-        diffuseColor *= vec4( vec3( mix( 0.98, 1.02, tuft.r ) ), tuft.a * smoothstep( 0.10, 0.42, vTuftHeight ) );
+        diffuseColor *= vec4( vec3( mix( 0.98, 1.02, tuft.r ) ), tuft.a * smoothstep( 0.0, 0.22, vTuftHeight ) );
       #endif
     `);
   };
-  material.customProgramCacheKey = () => "moss-rim-buried-clumps-v2";
+  material.customProgramCacheKey = () => "moss-rim-continuous-roots-v3";
   for (const mound of mounds) {
     const mats = Array.isArray(mound.material) ? mound.material : [mound.material];
     const mossMaterial = mats.find(m => /\.moss$/.test(m.name)) as THREE.MeshStandardMaterial;

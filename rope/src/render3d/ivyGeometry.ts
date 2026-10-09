@@ -56,15 +56,15 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
     const curl = .09 + .07 * rand(2401, a!, 1), fold = .07 + .06 * rand(2401, a!, 2);
     // Add companion leaves to the rock carpet, sharing the original texture
     // and attachment. Ferns use a different material and never enter this pass.
-    const copies = components.size > 16 && rand(3197, a!, 4) < .45 ? 2 : 1;
+    const copies = components.size > 16 ? (rand(3197, a!, 4) < .35 ? 3 : 2) : 1;
     leafCards += copies; companionLeaves += copies - 1;
     const rows = [0, base, .4, .7, 1];
     const geometric = points[1]!.clone().sub(points[0]!).cross(top.clone().sub(bottom));
     const reverse = geometric.dot(normal) * Math.sign(world.determinant()) < 0;
     for (let copy = 0; copy < copies; copy++) {
       const offset = count;
-      const turn = copy ? (rand(3197, a!, 5) - .5) * 1.1 : 0;
-      const size = copy ? 1.12 + .12 * rand(3197, a!, 6) : 1.32;
+      const turn = copy ? (copy === 1 ? -.65 : .65) + (rand(3197, a!, 5) - .5) * .5 : 0;
+      const size = copy ? 1.45 + .25 * rand(3197, a!, 6) : 1.8;
       for (const s of rows) for (const u of [0, .5, 1]) {
         const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
         const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));

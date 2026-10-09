@@ -8,7 +8,7 @@ patch.setAttribute('position', new THREE.Float32BufferAttribute([
   0, 0, 0, 1, 0, 0, 1, .5, 0, 0, 0, 0, 1, .5, 0, 0, .5, 0,
 ], 3));
 const fringe = buildMossFringe(patch, new THREE.Matrix4());
-assert.ok(fringe.userData.mossFringeCards > 15 && fringe.userData.mossFringeCards < 60);
+assert.ok(fringe.userData.mossFringeCards > 45 && fringe.userData.mossFringeCards < 100);
 const positions = fringe.getAttribute('position');
 for (const v of positions.array) assert.ok(Number.isFinite(v));
 for (let i = 0; i < positions.count; i += 8) {
@@ -17,6 +17,8 @@ for (let i = 0; i < positions.count; i += 8) {
   assert.ok(Math.min(Math.abs(x), Math.abs(x - 1), Math.abs(y), Math.abs(y - .5)) < .08,
     'tufts stay near the exterior rim, never the internal UV seam');
   assert.ok(positions.getZ(i) < 0 && positions.getZ(i + 1) < 0, 'both ends of every card base are buried');
+  assert.ok(Math.abs(positions.getZ(i + 2)) <= .001001 && Math.abs(positions.getZ(i + 3)) <= .001001,
+    'the visible root row overlaps the moss surface without an air gap');
 }
 assert.deepEqual(positions.array, buildMossFringe(patch, new THREE.Matrix4()).getAttribute('position').array);
 const translated = buildMossFringe(patch, new THREE.Matrix4().makeTranslation(2, 3, 4));
