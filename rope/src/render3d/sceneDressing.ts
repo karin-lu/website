@@ -20,8 +20,6 @@ import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
 import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
 import { addMossFringes } from "./mossFringe";
-import { fullerBushGeometry } from "./bushVolume";
-import { buildVineBushLeaves } from "./vineBushLeaves";
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -197,7 +195,6 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
         let ivyMeshes = 0;
         let foliageMeshes = 0;
         gltf.scene.updateMatrixWorld(true);
-        const bushes: THREE.Mesh[] = [];
         gltf.scene.traverse((o) => {
           const mesh = o as THREE.Mesh;
           if (!mesh.isMesh) return;
@@ -239,12 +236,6 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
           if (ivy || foliage) {
             if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh));
-            // Blender plants are authored about their crown. Scale the whole
-            // fern/bush there, retaining its stalks and its seated root.
-            if (foliage && names.some(n => /\.fern(\.\d+)?$/.test(n))) {
-              mesh.geometry = fullerBushGeometry(mesh.geometry);
-              bushes.push(mesh);
-            }
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
             else foliageMeshes++;
@@ -252,11 +243,6 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
         });
         if (ivyMeshes > 0) console.log(`[render3d] scene "${scene}": ${ivyMeshes} ivy meshes cast and receive leaf shadows`);
         if (foliageMeshes > 0) console.log(`[render3d] scene "${scene}": ${foliageMeshes} plant meshes cast and receive leaf shadows`);
-        for (const bush of bushes) {
-          const leaves = new THREE.Mesh(buildVineBushLeaves(bush.geometry, bush.matrixWorld, ivyHostSurface(bush)), bush.material);
-          leaves.name = "Bush vine leaves"; leaves.castShadow = true; leaves.receiveShadow = true;
-          bush.add(leaves);
-        }
         await addMossFringes(gltf.scene, ivyHostSurface);
         return gltf.scene as THREE.Object3D;
       })

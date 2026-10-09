@@ -19,12 +19,13 @@ lighten by 12%; the reference atlas contributes its cutout silhouette and slight
 texture detail rather than a dark grayscale band. Normals are interpolated from
 the mound so the join also shares its lighting.
 
-Bushes and ferns are enlarged by 45% about the dark crown in the solid atlas cell.
-Their compressed position attributes are decoded to floats before enlargement.
-Ivy blades spread 22% farther from their seated stalk and have a fuller arch.
-Broad painted vine leaves fill out the bush on short petioles joined to its
-solid support geometry. They reuse the plant's packed atlas, with muted green
-tints and curved blades. The published scene adds 21–32 leaves per bush.
+Rock-hugging ivy bushes have 32% larger blades and a fuller arch. About 45%
+of their existing cards receive a smaller, rotated companion at the same
+seated stalk. Companions reuse the original painted leaf UVs and colours,
+with slightly shaded bases. The greenery grows in overlapping layers around
+the rock rather than adding broad leaves to the separate fern clumps.
+Ferns retain their published geometry. Companion cards share the ivy material
+and mesh, so they do not introduce additional draw calls.
 
 Moss edge cards are 4.5–10 cm tall, with irregular spacing and lean. Both ends
 of each card's lower two rows conform to the moss cushion and sink into it;
@@ -42,7 +43,6 @@ painted moss and rocks remain the base appearance.
 Checks:
 
 - `bun run scripts/test-ivy-geometry.ts`
-- `bun run scripts/test-bush-volume.ts`
 - `bun run scripts/test-moss-fringe.ts`
 - `bun run scripts/test-foliage-scene.mts` (requires `bun run assets:fetch`)
 - `bun run typecheck`

@@ -6,8 +6,6 @@ import { curveIvyGeometry } from '../src/render3d/ivyGeometry';
 import { ivyHostSurface } from '../src/render3d/ivyGeometry';
 import { buildMossFringe } from '../src/render3d/mossFringe';
 import assert from 'node:assert/strict';
-import { fullerBushGeometry } from '../src/render3d/bushVolume';
-import { buildVineBushLeaves } from '../src/render3d/vineBushLeaves';
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({'meshopt.decoder':MeshoptDecoder});
 const doc = await io.read('public/scenes/river/scene.glb');
@@ -18,7 +16,7 @@ for (const node of doc.getRoot().listNodes()) {
   group.matrix.fromArray(node.getMatrix()); group.matrixAutoUpdate=false; objects.set(node,group);
 }
 for (const [node,group] of objects) (objects.get(node.getParentNode()) ?? root).add(group);
-let leaves=0,tufts=0,mounds=0;
+let leaves=0,companions=0,tufts=0,mounds=0;
 for (const node of doc.getRoot().listNodes()) {
   for (const prim of node.getMesh()?.listPrimitives() ?? []) {
     const mat = prim.getMaterial()!;
@@ -39,19 +37,12 @@ root.updateMatrixWorld(true);
 root.traverse(o=>{
   if (!(o instanceof THREE.Mesh)) return;
   const material = o.material as THREE.Material;
-  if (material.name === 'Foliage' && /\.fern(\.\d+)?$/.test(o.parent!.name)) {
-    const bush = fullerBushGeometry(o.geometry);
-    const additions = buildVineBushLeaves(bush, o.matrixWorld, ivyHostSurface(o));
-    console.log(`${o.parent!.name}: ${additions.userData.vineBushLeaves} connected vine leaves`);
-    assert.ok(additions.userData.vineBushLeaves >= 6 && additions.userData.vineBushLeaves <= 32);
-    for (const v of additions.getAttribute('position').array) assert.ok(Number.isFinite(v));
-    for (const v of additions.getAttribute('uv').array) assert.ok(v >= 0 && v <= 1);
-  }
   if (/^Ivy(Clumps)?$/.test(material.name)) {
     const curved=curveIvyGeometry(o.geometry,o.matrixWorld,ivyHostSurface(o));
     assert.ok(curved.userData.curvedIvy,'exported cards are recognized');
     for (const v of curved.getAttribute('position').array) assert.ok(Number.isFinite(v));
-    leaves += (curved.getAttribute('position').count-o.geometry.getAttribute('position').count)/11;
+    leaves += curved.userData.ivyLeafCards;
+    companions += curved.userData.rockBushCompanionLeaves;
   }
   if (/\.moss$/.test(material.name)) {
     const fringe=buildMossFringe(o.geometry,o.matrixWorld,ivyHostSurface(o));
@@ -61,5 +52,5 @@ root.traverse(o=>{
     console.log(`${o.parent!.name}: ${fringe.userData.mossFringeCards} moss edge cards`);
   }
 });
-assert.equal(mounds,3); assert.ok(leaves>1000);
-console.log(`Published river scene passed: ${Math.round(leaves)} curved leaf cards, ${tufts} edge tufts across ${mounds} moss mounds.`);
+assert.equal(mounds,3); assert.ok(leaves>1000); assert.ok(companions>1000);
+console.log(`Published river scene passed: ${leaves} curved leaf cards including ${companions} rooted companions, ${tufts} edge tufts across ${mounds} moss mounds.`);

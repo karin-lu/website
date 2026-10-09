@@ -24,7 +24,7 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   const values: Record<string, number[]> = {};
   for (const key of Object.keys(source.attributes)) values[key] = [];
   const triangles: number[] = [], replaced = new Set<number>();
-  let count = 0;
+  let count = 0, leafCards = 0, companionLeaves = 0;
   const get = (id: number) => new THREE.Vector3().fromBufferAttribute(position, id).applyMatrix4(world);
   for (const ids of components.values()) {
     if (ids.length !== 4) continue;
@@ -54,35 +54,47 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       pull.subVectors(target, anchor);
     }
     const curl = .09 + .07 * rand(2401, a!, 1), fold = .07 + .06 * rand(2401, a!, 2);
-    const rows = [0, base, .4, .7, 1], offset = count;
-    for (const s of rows) for (const u of [0, .5, 1]) {
-      const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
-      const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
-      // Grow from the seated stalk, so a larger leaf cannot lift its root.
-      p.sub(anchor).multiplyScalar(1.22).add(anchor);
-      const t = Math.max(0, (s - base) / (1 - base));
-      p.add(pull).addScaledVector(normal, height * (.24 * Math.sin(Math.PI * t) - curl * t * t)
-        + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
-      // The same surface projection used by vines prevents curling into stone.
-      rock?.project(p, s <= base ? .002 : .005);
-      p.applyMatrix4(inverse);
-      for (const [name, output] of Object.entries(values)) {
-        const attr = source.getAttribute(name);
-        for (let k = 0; k < attr.itemSize; k++) {
-          if (name === "position") output.push(p.getComponent(k));
-          else output.push(corners.reduce<number>((sum, id, j) => sum + attr.getComponent(id!, k) * weights[j]!, 0));
-        }
-      }
-      count++;
-    }
+    // Add companion leaves to the rock carpet, sharing the original texture
+    // and attachment. Ferns use a different material and never enter this pass.
+    const copies = components.size > 16 && rand(3197, a!, 4) < .45 ? 2 : 1;
+    leafCards += copies; companionLeaves += copies - 1;
+    const rows = [0, base, .4, .7, 1];
     const geometric = points[1]!.clone().sub(points[0]!).cross(top.clone().sub(bottom));
     const reverse = geometric.dot(normal) * Math.sign(world.determinant()) < 0;
-    for (let r = 0; r < rows.length - 1; r++) for (let col = 0; col < 2; col++) {
-      const i = offset + r * 3 + col;
-      const face = [i, i + 1, i + 4, i, i + 4, i + 3];
-      if (reverse) for (let j = 0; j < face.length; j += 3) [face[j + 1], face[j + 2]] = [face[j + 2]!, face[j + 1]!];
-      triangles.push(...face);
-    }
+    for (let copy = 0; copy < copies; copy++) {
+      const offset = count;
+      const turn = copy ? (rand(3197, a!, 5) - .5) * 1.1 : 0;
+      const size = copy ? 1.12 + .12 * rand(3197, a!, 6) : 1.32;
+      for (const s of rows) for (const u of [0, .5, 1]) {
+        const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
+        const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
+        // Grow from the seated stalk, so a larger leaf cannot lift its root.
+        p.sub(anchor).multiplyScalar(size).applyAxisAngle(normal, turn).add(anchor);
+        const t = Math.max(0, (s - base) / (1 - base));
+        p.add(pull).addScaledVector(normal, height * ((copy ? .40 : .30) * Math.sin(Math.PI * t) - curl * t * t)
+          + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
+        // The same surface projection used by vines prevents curling into stone.
+        rock?.project(p, s <= base ? .002 : .005);
+        p.applyMatrix4(inverse);
+        for (const [name, output] of Object.entries(values)) {
+          const attr = source.getAttribute(name);
+          for (let k = 0; k < attr.itemSize; k++) {
+            if (name === "position") output.push(p.getComponent(k));
+            else {
+              const value = corners.reduce<number>((sum, id, j) => sum + attr.getComponent(id!, k) * weights[j]!, 0);
+              output.push(name === "color" && copy ? value * (.90 + .10 * t) : value);
+            }
+          }
+        }
+        count++;
+      }
+      for (let r = 0; r < rows.length - 1; r++) for (let col = 0; col < 2; col++) {
+        const i = offset + r * 3 + col;
+        const face = [i, i + 1, i + 4, i, i + 4, i + 3];
+        if (reverse) for (let j = 0; j < face.length; j += 3) [face[j + 1], face[j + 2]] = [face[j + 2]!, face[j + 1]!];
+        triangles.push(...face);
+      }
+      }
     ids.forEach(i => replaced.add(i));
   }
   if (!replaced.size) return source;
@@ -103,6 +115,8 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   for (const [name, output] of Object.entries(values)) geometry.setAttribute(name, new THREE.Float32BufferAttribute(output, source.getAttribute(name).itemSize));
   geometry.setIndex(triangles); geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
   geometry.userData.curvedIvy = true;
+  geometry.userData.ivyLeafCards = leafCards;
+  geometry.userData.rockBushCompanionLeaves = companionLeaves;
   return geometry;
 }
 
