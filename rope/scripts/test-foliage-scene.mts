@@ -45,6 +45,13 @@ root.traverse(o=>{
     const before = curved.getAttribute('position').count;
     const cushion = buildBushSupport(curved, o.matrixWorld, () => new THREE.Color('#638a38'));
     assert.ok(cushion.userData.bushSupportLobes > 0, 'every rock bush receives solid support');
+    assert.equal(cushion.userData.bushSupportLobes, 1, 'the support is a fused surface instead of separate lobes');
+    assert.equal(cushion.userData.continuousBushSupport, true);
+    const backingColour = cushion.getAttribute('color');
+    for (let i=1;i<backingColour.count;i++) for (let channel=0;channel<3;channel++) {
+      assert.equal(backingColour.getComponent(i,channel), backingColour.getComponent(0,channel),
+        'one consistent green palette covers the whole backing');
+    }
     for (const value of cushion.getAttribute('position').array) assert.ok(Number.isFinite(value));
     assert.equal(curved.getAttribute('position').count, before, 'support adds no leaf cards');
     assert.deepEqual(cushion.getAttribute('position').array,
