@@ -65,19 +65,24 @@ export function buildMossFringe(source: THREE.BufferGeometry, world: THREE.Matri
     if (!boundary && !silhouette) continue;
     const face = edge.faces.reduce((a, b) => a.normal.z > b.normal.z ? a : b);
     if (face.normal.z < -.15) continue;
+    const steep = Math.abs(face.normal.y) < .6;
     const a = points[edge.a], b = points[edge.b], length = a.distanceTo(b);
-    const steps = Math.ceil(length / .045);
+    // Broad, densely repeated cards on a vertical rim read as a curtain.
+    // Keep the top fluffy, but use shorter, less crowded accents on its sides.
+    const steps = Math.ceil(length / (steep ? .075 : .05));
     for (let k = 0; k < steps && card < 1400; k++) {
-      const t = (k + .22 + .55 * rand(seed, n * 101 + k, 1)) / steps;
+      const t = (k + .10 + .80 * rand(seed, n * 101 + k, 1)) / steps;
       const p = a.clone().lerp(b, t);
       const inward = face.centre.clone().sub(p).normalize();
       // The dark base overlaps the mound instead of sitting above its outline.
-      p.addScaledVector(inward, .012 + .012 * rand(seed, n * 101 + k, 9));
+      p.addScaledVector(inward, (steep ? .025 : .015) + .015 * rand(seed, n * 101 + k, 9));
       const key = [p.x, p.y, p.z].map((v, j) => Math.round((v - points[0].getComponent(j)) / .025)).join(",");
       if (occupied.has(key)) continue;
       occupied.add(key);
       const r = rand(seed, n * 101 + k, 2);
-      const width = .105 + r * .080, height = .060 + rand(seed, n * 101 + k, 3) * .060;
+      const width = steep ? .075 + r * .055 : .105 + r * .080;
+      const height = steep ? .032 + rand(seed, n * 101 + k, 3) * .034
+        : .060 + rand(seed, n * 101 + k, 3) * .060;
       // Spread along the rock's rim, with a slight upward lift. Face +z, the
       // side-scroller camera, rather than copying an edge-on ground card.
       const up = face.normal.clone().multiplyScalar(.7).addScaledVector(inward, boundary ? -.5 : 0);
@@ -106,13 +111,22 @@ export function buildMossFringe(source: THREE.BufferGeometry, world: THREE.Matri
       for (let row = 0; row < rows.length; row++) for (let side = 0; side < 2; side++) {
         const v = rows[row], span = row === 0 ? .62 : row === 1 ? .85 : 1;
         const vertex = p.clone().addScaledVector(right, (side - .5) * width * span)
-          .addScaledVector(up, height * (v - .30)).addScaledVector(face.normal, Math.sin(v * Math.PI) * .016);
+          .addScaledVector(up, height * (v - (steep ? .42 : .30)))
+          .addScaledVector(face.normal, Math.sin(v * Math.PI) * (steep ? .006 : .016));
         if (row < 2) {
           // Conform the whole foot to the cushion, hiding rectangular bases
           // even at corners where the two ends would otherwise hang in air.
           const foot = mossSurface?.nearest(vertex);
           if (foot) vertex.copy(foot.point).addScaledVector(foot.normal, row === 0 ? -.006 : .001);
-        } else rock?.project(vertex, .004);
+        } else {
+          if (steep) {
+            const backing = mossSurface?.nearest(vertex);
+            const reach = height * .18;
+            if (backing && backing.distance > reach)
+              vertex.lerp(backing.point, 1 - reach / backing.distance);
+          }
+          rock?.project(vertex, .004);
+        }
         vertex.applyMatrix4(inverse);
         positions.push(vertex.x, vertex.y, vertex.z); normals.push(normal.x, normal.y, normal.z);
         uvs.push(cell[0] + side * cell[2], cell[1] + v * cell[3]);

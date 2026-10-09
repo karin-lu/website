@@ -51,6 +51,12 @@ colours sample its painted texture, and tips lighten by 6%. Placement follows
 open rims and front silhouettes, with up to 1400 cards per mound and one draw
 per mound. The atlas was supplied in files.zip on 2026-10-09.
 
+Steep side rims use shorter 3.2–6.6 cm cards at roughly 7.5 cm spacing, with
+broader spacing jitter, smaller widths and deeper root overlap. Their tips
+stay within 18% of card height of the moss backing. Upward-facing surfaces
+keep their taller tufts. This breaks up the dark hanging curtain without
+exposing rectangular card bases or recolouring the moss.
+
 Checks:
 
 - bun run scripts/test-ivy-geometry.ts

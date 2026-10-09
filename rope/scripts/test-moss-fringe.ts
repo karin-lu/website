@@ -8,7 +8,7 @@ patch.setAttribute('position', new THREE.Float32BufferAttribute([
   0, 0, 0, 1, 0, 0, 1, .5, 0, 0, 0, 0, 1, .5, 0, 0, .5, 0,
 ], 3));
 const fringe = buildMossFringe(patch, new THREE.Matrix4());
-assert.ok(fringe.userData.mossFringeCards > 45 && fringe.userData.mossFringeCards < 100);
+assert.ok(fringe.userData.mossFringeCards > 25 && fringe.userData.mossFringeCards < 70);
 const positions = fringe.getAttribute('position');
 for (const v of positions.array) assert.ok(Number.isFinite(v));
 for (let i = 0; i < positions.count; i += 8) {
@@ -25,6 +25,17 @@ const translated = buildMossFringe(patch, new THREE.Matrix4().makeTranslation(2,
 assert.equal(translated.userData.mossFringeCards, fringe.userData.mossFringeCards, 'placement is host-local');
 for (const v of fringe.getAttribute('uv').array) assert.ok(v >= 0 && v <= 1);
 assert.equal(patch.getAttribute('position').count, 6, 'cached mound stays intact');
+const topFringe=buildMossFringe(patch,new THREE.Matrix4().makeRotationX(-Math.PI/2));
+assert.ok(topFringe.userData.mossFringeCards>fringe.userData.mossFringeCards,
+  'steep sides have less crowded fringe than upward-facing moss');
+for(let i=0;i<positions.count;i+=8) {
+  const root=new THREE.Vector3().fromBufferAttribute(positions,i+2)
+    .add(new THREE.Vector3().fromBufferAttribute(positions,i+3)).multiplyScalar(.5);
+  const tip=new THREE.Vector3().fromBufferAttribute(positions,i+6)
+    .add(new THREE.Vector3().fromBufferAttribute(positions,i+7)).multiplyScalar(.5);
+  assert.ok(root.distanceTo(tip)<.065,'side tufts stay short instead of forming hanging strips');
+  assert.ok(Math.abs(tip.z)<.013,'side tips remain tucked close to their moss backing');
+}
 patch.setAttribute('uv', new THREE.Float32BufferAttribute([0,0,1,0,1,1,0,0,1,1,0,1], 2));
 const ground = new THREE.Color('#6f913b');
 const matched = buildMossFringe(patch, new THREE.Matrix4(), undefined, 8107, () => ground.clone());
