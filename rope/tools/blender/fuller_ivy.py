@@ -43,6 +43,8 @@ for ob in objects:
     s.leaf_fill *= 1.6335
     s.clump_fill *= 1.6335
     s.edge_fill *= 1.20
+    if ob.name == 'Terrace.002.ivy':
+        s.trailing = 0.85
     result = ops.rebuild(ob)
     if result is None:
         raise RuntimeError(f'Missing host for {ob.name}')

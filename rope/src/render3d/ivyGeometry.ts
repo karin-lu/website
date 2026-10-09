@@ -7,7 +7,7 @@ import { LeafSupport } from './leafSupport';
  * Connected rock underlays, constant-UV stems and segmented hanging strands
  * are retained. Only isolated, rectangular two-triangle cards are rebuilt. */
 export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matrix4, rock?: VineSurface,
-  opaque?: (uv:THREE.Vector2)=>boolean): THREE.BufferGeometry {
+  opaque?: (uv:THREE.Vector2)=>boolean, droop = 0): THREE.BufferGeometry {
   if (source.userData.curvedIvy) return source;
   const position = source.getAttribute("position"), uv = source.getAttribute("uv");
   if (!position || !uv || !source.index) return source;
@@ -76,6 +76,9 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       const t = Math.max(0, (s - base) / (1 - base));
       p.add(pull).addScaledVector(normal, height * (.045 * Math.sin(Math.PI * t) - curl * t * t)
         + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
+      // Trailing leaves ease downward from the fixed stalk, not along the
+      // rock's normal (which points down on an underside and up at its rim).
+      p.y -= height * droop * t * t;
       // The same surface projection used by vines prevents curling into stone.
       if (s>base) {
         const beneath=support.below(p.clone().addScaledVector(normal,.08),normal,.16);

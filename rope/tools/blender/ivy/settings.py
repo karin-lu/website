@@ -74,6 +74,7 @@ class IvySettings(bpy.types.PropertyGroup):
     tilt: FloatProperty(name="Tilt", default=_D.tilt, min=0.0, soft_max=30.0, description="Degrees a leaf pitches tip-up off the rock, so its tip rides over the leaf beyond it", update=_changed)
     spread: FloatProperty(name="Spread", default=_D.spread, min=0.0, max=180.0, description="Degrees a leaf may stray from pointing straight away from the origin", update=_changed)
     taper: _factor("Taper", _D.taper, "How much smaller the leaves at the far end of the carpet are than those at the origin")
+    trailing: _factor("Trailing Growth", _D.trailing, "Fan outer overhang leaves sideways and downward, away from the rock")
 
     # Detail "Clumps" only.
     clump_min: _length("Clump Min", _D.clump_min, 0.05, 2.0, "Smallest clump card")

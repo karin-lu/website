@@ -237,7 +237,8 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
           // ...and the leaves receive with finer biases than the sun's, so a
           // leaf shadows the leaf below it; two-sided and translucent (ivyLeaves.ts).
           if (ivy || foliage) {
-            if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh), leafOpacitySampler(mats[0] as THREE.MeshStandardMaterial));
+            if (ivy) mesh.geometry = curveIvyGeometry(mesh.geometry, mesh.matrixWorld, ivyHostSurface(mesh),
+              leafOpacitySampler(mats[0] as THREE.MeshStandardMaterial), names.includes('Terrace.002.ivy') ? .05 : 0);
             for (const m of mats) wearIvyLeaves(m);
             if (ivy) ivyMeshes++;
             else foliageMeshes++;

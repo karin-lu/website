@@ -83,7 +83,7 @@ class IVY_PT_surface(_Sub, bpy.types.Panel):
             self.layout.label(text="No origin: the carpet grows from the top of its paint", icon="INFO")
         else:
             self.layout.label(text=f"{origin.name}; move it (G) or delete it (X)", icon="EMPTY_DATA")
-        _grid(self.layout, s, ("thickness", "tilt", "spread", "taper"))
+        _grid(self.layout, s, ("thickness", "tilt", "spread", "taper", "trailing"))
         if s.detail == "CLUMPS":
             self.layout.label(text="Clumps")
             _grid(self.layout, s, ("clump_min", "clump_max", "clump_fill", "edge_fill", "edge_round", "underlay"))

@@ -30,8 +30,8 @@
     ]
   },
   "river": {
-    "sha256": "8048c28fd9dd8064da1f77aae80536921220bb23b562e87b02d30f347fb3ffc4",
-    "bytes": 20825060,
+    "sha256": "e45e3ee6cedebc16074ac6c6dc7d7c9da5e316f914d9c07d50692ccb5d3d0a76",
+    "bytes": 21637664,
     "credits": [
       {
         "name": "finish_line",
@@ -52,6 +52,6 @@
         "license": "CC BY 4.0"
       }
     ],
-    "url": "https://github.com/karin-lu/website/releases/download/foliage-assets-20261009/scene-river-8048c28fd9dd.glb"
+    "url": "https://github.com/karin-lu/website/releases/download/foliage-assets-20261009/scene-river-e45e3ee6cede.glb"
   }
 }

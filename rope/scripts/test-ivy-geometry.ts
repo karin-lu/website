@@ -25,6 +25,11 @@ for (let i = 0; i < 15; i++) {
 assert.deepEqual(curved.getAttribute('position').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('position').array);
 assert.equal(curveIvyGeometry(curved, new THREE.Matrix4(), rock), curved, 'no repeated bending');
 assert.equal(card.getAttribute('position').count, 4, 'source remains intact');
+const trailing=curveIvyGeometry(card,new THREE.Matrix4(),rock,undefined,.05);
+assert.ok(Math.abs(trailing.getAttribute('position').getY(4)-curved.getAttribute('position').getY(4))<1e-6,
+  'trailing curve keeps the seated stalk fixed');
+assert.ok(trailing.getAttribute('position').getY(13)<curved.getAttribute('position').getY(13)-.014,
+  'trailing tip droops in world-down, independent of the rock normal');
 // The painterly hull normal intentionally differs from the card's plane.
 // Curving/seating must not turn this into triangle-based hard shading.
 const painted=card.clone();

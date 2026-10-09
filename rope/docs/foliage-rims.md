@@ -22,6 +22,14 @@ supports previewing one bush. The merged scene retains all original textures,
 materials, node transforms and non-ivy geometry. A separate release on the
 user's fork supplies the branch-specific scene, pinned by URL and SHA-256.
 
+The long shelf's `Terrace.002.ivy` has Trailing Growth set to 0.85. Its outer
+leaves on front/underside surfaces fan sideways and downward from their
+existing stalks; inner leaves and upward-facing tops retain their growth
+field. Sideways variation follows the original growth directions. The
+runtime adds a gentle world-down tip droop (5% of card height). Other bushes
+retain their existing direction. The Blender Ivy → Carpet panel exposes
+Trailing Growth for later adjustment.
+
 Only individual rectangular leaf cards are bent. Their stalk-to-tip path has
 a small arch, mild tip curl and a slight cross-blade fold. The original rounded
 host normals shade the curved leaves and underlay; rebuilding normals from

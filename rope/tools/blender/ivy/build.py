@@ -166,6 +166,7 @@ class Params:
     edge_round: float = 0.15  # the distance in from the paint's outline over which the carpet rounds down onto the rock
     underlay: float = 0.02
     tilt: float = 8.0  # degrees a leaf pitches tip-up off the hull
+    trailing: float = 0.0  # downward/outward bias for an overhang's outer leaves
     spread: float = 25.0  # degrees a leaf may stray from the growth direction
     taper: float = 0.3  # how much smaller the leaves at the far end of the carpet are
     # Clumps (detail "CLUMPS" only; the carpet's other knobs still apply)
@@ -685,6 +686,30 @@ def _field(v, t, edges, f, hull, n_raw, origin, p, rng, density, crowd_r):
     return _Field(P, HN, F, Mn, T, tones, OUTd, OUTl, R, RIM, GROW, grown, idx, area)
 
 
+def _trail(u, hn, side, edge, strength):
+    """Outer overhang leaves fan sideways and down, away from the stone.
+
+    Retain the growth field's sideways variation and the exact stalk position.
+    Upward-facing tops and inner leaves keep their authored growth direction.
+    """
+    if strength <= 0 or hn[2] > 0.35 or edge >= 0.9:
+        return u, side
+    aim = np.array((u[0] * 0.8, -0.28 + u[1] * 0.15, -0.65))
+    aim /= np.linalg.norm(aim)
+    weight = strength * (1.0 - 0.15 * edge)
+    direction = u * (1.0 - weight) + aim * weight
+    # Never point back through the host's rounded surface.
+    inward = float(direction @ hn)
+    if inward < 0:
+        direction -= hn * inward
+    direction /= np.linalg.norm(direction)
+    across = np.cross(direction, hn)
+    if np.linalg.norm(across) < 1e-6:
+        across = side - direction * float(side @ direction)
+    across /= np.linalg.norm(across)
+    return direction, across
+
+
 def _carpet(quads, v, t, edges, f, hull, n_raw, origin, p, rnd, rng):
     """The sheets of leaves over the paint, grown out from the origin. Returns
     how many were laid."""
@@ -736,6 +761,7 @@ def _carpet(quads, v, t, edges, f, hull, n_raw, origin, p, rnd, rng):
             base, u, side, n = _lay(P[i], hn, u, RIM[i], R[i], floor[i], rest, length, p.edge_round)
             # The pitch: tip up about the leaf's own side axis.
             u, n = _rotate(u, side, pitch[i]), _rotate(n, side, pitch[i])
+            u, side = _trail(u, hn, side, edge[i], p.trailing)
             centre = base + u * (0.5 - LEAF_BASE) * card_h
             col = _tint(hn, np.array(depth_k * Mn[i]), np.array(rnd.uniform(-p.variation, p.variation)), tones[i], p)
             quads.add(_corners(centre, side, u, card_w, card_h), hn, col, _uv_cell(rnd.choice(LEAF_CELLS)))
