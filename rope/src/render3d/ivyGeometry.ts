@@ -46,10 +46,12 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       : points[1]!.clone().sub(points[0]!).cross(top.clone().sub(bottom)).normalize();
     const base = du > .195 ? .16 : .09;
     const anchor = bottom.clone().lerp(top, base), pull = new THREE.Vector3();
-    const hit = rock?.nearest(anchor, Math.max(.25, height * .8));
-    if (hit && hit.normal.dot(normal) > -.2) {
-      const target = hit.point.clone().addScaledVector(hit.normal, .009);
-      pull.subVectors(target, anchor).clampLength(0, Math.min(.08, height * .45));
+    const hit = rock?.nearest(anchor, Math.max(.4, height * 1.2));
+    if (hit) {
+      // The stalk is the attachment, not the centre of the transparent card.
+      // A capped pull left the upper carpet sheets suspended above their host.
+      const target = hit.point.clone().addScaledVector(hit.normal, .002);
+      pull.subVectors(target, anchor);
     }
     const curl = .09 + .07 * rand(2401, a!, 1), fold = .07 + .06 * rand(2401, a!, 2);
     const rows = [0, base, .4, .7, 1], offset = count;
@@ -57,10 +59,10 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
       const weights = [(1 - u) * (1 - s), u * (1 - s), (1 - u) * s, u * s];
       const p = new THREE.Vector3(); points.forEach((point, k) => p.addScaledVector(point, weights[k]!));
       const t = Math.max(0, (s - base) / (1 - base));
-      p.add(pull).addScaledVector(normal, height * (.08 * Math.sin(Math.PI * t) - curl * t * t)
+      p.add(pull).addScaledVector(normal, height * (.16 * Math.sin(Math.PI * t) - curl * t * t)
         + width * fold * (2 * u - 1) ** 2 * Math.sin(Math.PI * t));
       // The same surface projection used by vines prevents curling into stone.
-      rock?.project(p, .005);
+      rock?.project(p, s <= base ? .002 : .005);
       p.applyMatrix4(inverse);
       for (const [name, output] of Object.entries(values)) {
         const attr = source.getAttribute(name);

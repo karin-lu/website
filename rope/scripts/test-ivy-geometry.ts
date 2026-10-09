@@ -18,7 +18,7 @@ assert.ok(curved.getAttribute('position').getZ(7) > curved.getAttribute('positio
 assert.ok(curved.getAttribute('position').getZ(13) < curved.getAttribute('position').getZ(10), 'tip curls down');
 for (const value of curved.getAttribute('position').array) assert.ok(Number.isFinite(value));
 for (let i = 0; i < 15; i++) {
-  assert.ok(curved.getAttribute('position').getZ(i) >= .0049, 'no rock penetration');
+  assert.ok(curved.getAttribute('position').getZ(i) >= .0019, 'no rock penetration');
   assert.ok(curved.getAttribute('uv').getX(i) >= 0 && curved.getAttribute('uv').getX(i) <= .191);
   assert.ok(Math.abs(curved.getAttribute('color').getY(i) - .6) < .00001);
 }
@@ -29,4 +29,8 @@ const stem = card.clone(); stem.setAttribute('uv', new THREE.Float32BufferAttrib
 assert.equal(curveIvyGeometry(stem, new THREE.Matrix4(), rock), stem, 'constant UV support geometry is retained');
 const mirrored = curveIvyGeometry(card, new THREE.Matrix4().makeScale(-1, 1, 1), rock);
 assert.ok(mirrored.getAttribute('normal').getZ(7) > 0, 'mirrored hosts retain the correct leaf winding');
+const raised = card.clone(); raised.translate(0, 0, .18);
+const rooted = curveIvyGeometry(raised, new THREE.Matrix4(), rock);
+assert.ok(Math.abs(rooted.getAttribute('position').getZ(4) - .002) < 1e-6,
+  'raised bush sheets attach to their host without the old capped-pull gap');
 console.log('Curved ivy attachment, texture preservation, deterministic shape and collision checks passed.');

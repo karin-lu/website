@@ -19,6 +19,7 @@ import { gltfLoader, trackPending } from "./assets";
 import { withDownload } from "./download";
 import { wearIvyLeaves } from "./ivyLeaves";
 import { curveIvyGeometry, ivyHostSurface } from "./ivyGeometry";
+import { addMossFringes } from "./mossFringe";
 import { threeRotation, threeY } from "./space";
 import { nodeNameOf, SCENE_ASSETS, sceneFile } from "./scenes";
 
@@ -190,7 +191,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
   const loading = gltfLoader();
   const p = trackPending(
     withDownload(file, bytes, (href) => loading.then((loader) => loader.loadAsync(href)))
-      .then((gltf) => {
+      .then(async (gltf) => {
         let ivyMeshes = 0;
         let foliageMeshes = 0;
         gltf.scene.updateMatrixWorld(true);
@@ -242,6 +243,7 @@ export function loadSceneFile(scene: string): Promise<THREE.Object3D | null> {
         });
         if (ivyMeshes > 0) console.log(`[render3d] scene "${scene}": ${ivyMeshes} ivy meshes cast and receive leaf shadows`);
         if (foliageMeshes > 0) console.log(`[render3d] scene "${scene}": ${foliageMeshes} plant meshes cast and receive leaf shadows`);
+        await addMossFringes(gltf.scene, ivyHostSurface);
         return gltf.scene as THREE.Object3D;
       })
       .catch((err: unknown) => {
