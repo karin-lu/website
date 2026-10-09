@@ -125,7 +125,13 @@ export function curveIvyGeometry(source: THREE.BufferGeometry, world: THREE.Matr
   }
   const geometry = new THREE.BufferGeometry();
   for (const [name, output] of Object.entries(values)) geometry.setAttribute(name, new THREE.Float32BufferAttribute(output, source.getAttribute(name).itemSize));
-  geometry.setIndex(triangles); geometry.computeVertexNormals(); geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+  geometry.setIndex(triangles);
+  // Blender deliberately shades each painted leaf with the rounded host's
+  // hull normal. Recomputing normals from the contact-adjusted triangles
+  // turns small bends into dark creases and exposes the card's triangulation.
+  // Keep those authored normals, including on the connected underlay.
+  if (!geometry.getAttribute('normal')) geometry.computeVertexNormals();
+  geometry.computeBoundingBox(); geometry.computeBoundingSphere();
   geometry.userData.curvedIvy = true;
   Object.assign(geometry.userData,{ivyLeafCards:leafCards,leafContacts,hostContacts,attachments});
   return geometry;

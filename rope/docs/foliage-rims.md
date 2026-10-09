@@ -22,7 +22,9 @@ materials, node transforms and non-ivy geometry. A separate release on the
 user's fork supplies the branch-specific scene, pinned by URL and SHA-256.
 
 Only individual rectangular leaf cards are bent. Their stalk-to-tip path has
-a small arch, mild tip curl and a slight cross-blade fold. Layers are processed
+a small arch, mild tip curl and a slight cross-blade fold. The original rounded
+host normals shade the curved leaves and underlay; rebuilding normals from
+the contact-adjusted triangles would introduce dark creases. Layers are processed
 from the host outward. Each visible stalk is seated 2 mm above the original
 solid underlay, a previously seated leaf, or the rock if no leaf supports it.
 Supporting leaves are checked against their atlas alpha: transparent space

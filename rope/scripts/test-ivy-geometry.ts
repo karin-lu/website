@@ -25,6 +25,14 @@ for (let i = 0; i < 15; i++) {
 assert.deepEqual(curved.getAttribute('position').array, curveIvyGeometry(card, new THREE.Matrix4(), rock).getAttribute('position').array);
 assert.equal(curveIvyGeometry(curved, new THREE.Matrix4(), rock), curved, 'no repeated bending');
 assert.equal(card.getAttribute('position').count, 4, 'source remains intact');
+// The painterly hull normal intentionally differs from the card's plane.
+// Curving/seating must not turn this into triangle-based hard shading.
+const painted=card.clone();
+const hull=new THREE.Vector3(.3,.4,.8).normalize();
+painted.setAttribute('normal',new THREE.Float32BufferAttribute(Array(4).fill(hull.toArray()).flat(),3));
+const soft=curveIvyGeometry(painted,new THREE.Matrix4(),rock);
+for(let i=0;i<15;i++) assert.ok(new THREE.Vector3().fromBufferAttribute(soft.getAttribute('normal'),i).distanceTo(hull)<1e-6,
+  'original soft hull normals survive curvature and support adjustment');
 const stem = card.clone(); stem.setAttribute('uv', new THREE.Float32BufferAttribute(Array(8).fill(.99), 2));
 assert.equal(curveIvyGeometry(stem, new THREE.Matrix4(), rock), stem, 'constant UV support geometry is retained');
 const mirrored = curveIvyGeometry(card, new THREE.Matrix4().makeScale(-1, 1, 1), rock);
