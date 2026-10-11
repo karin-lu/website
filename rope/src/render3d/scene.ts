@@ -1232,7 +1232,7 @@ export class Scene3D {
     for (const visual of this.standing) visual.sync(alpha, treadTime);
 
     this.chains.sync(level, alpha, retract);
-    this.vines.sync(level.vines ?? NO_VINES, alpha);
+    this.vines.sync(level.vines ?? NO_VINES, alpha, treadTime);
     this.ballVisual?.sync(alpha);
     this.splashes.update(
       clock,

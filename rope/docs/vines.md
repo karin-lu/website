@@ -455,6 +455,82 @@ way. Capsules rather than cylinders because the cord bends at every link and the
 hemispherical caps fill the notch two cylinders would leave on the outside of a
 bend, at any angle and with no mitre to compute.
 
+With a `braidSeed`, both renderers use the old three-strand braid from
+`add-boulder-and-root-generation`, refined for smooth moving geometry.
+`render/vineCurve.ts` interpolates the links with arc-weighted Hermite tangents;
+`render/vineBraid.ts` packs three unequal stems in a tangent triangle, varying
+their gauges and smoothly tightening/loosening the pitch over seeded growth
+stretches without reversing the twist, and tapering along the whole length, then the
+last 18 cm (or 30% of a short cord) to a pointed end. Small swollen nodes share
+their seeded growth coordinates with the leaf attachments. The 3D renderer uses
+three continuous, capped tubes in one mesh per vine (`render3d/vineTube.ts`),
+with 12 radial sides, shared ring vertices and smooth transported normals.
+Buffers grow only when needed; unchanged curves skip tube uploads. Each live
+cord exposes its built `restLength` and whether both ends attach; render samples
+carry `(link index + spline parameter) * rest spacing` independently of their
+current arc length. Braid phase, nodes, leaves and broad bark/olive/moss paint
+patches use these material stations, so stretching one link cannot slide the
+decoration on another. The editor's equal-arc rest samples use the same mapping.
+Shallow longitudinal ridges and restrained contact
+darkening describe the stems' fibres and crossings, with matte roughness.
+`render/vineLeaves.ts` places sparse leaves on the same interpolated curve.
+Unequal seeded growth intervals place nodes in clusters with longer bare
+stretches. Leaves grow singly or in staggered pairs, with a broad size range
+from small young blades to mature leaves and smaller growth near the tip.
+Blade bases attach directly to the outer braid surface; neither renderer draws
+little leaf stalks. In 3D, `VineTube.leafSurface` selects an exposed rendered edge
+across all three strands at the attachment's material station, so the roots
+meet the actual ridges without being buried. The blade's supporting plane keeps
+the whole braid behind its base, rather than clearing only one strand.
+Blade width stays tangent to that plane, and the blade grows
+outward before it droops and gradually turns toward the gameplay plane. The
+turn and its normal deformation are shared by lit, depth and point shadows.
+The braid test checks blade vertices against the rendered solid, including a
+player grabbing a two-ended span, while comparing the physics against plain cords.
+The instanced blades have asymmetric outlines, a raised midrib, shallow cups
+and drooping tips; most are flatter, with occasional curls. Their shader paints
+broad colour patches, a midrib and branching veins, with a softer waxy highlight
+and a paler underside. Thin-leaf backlighting uses the scene's direct lights and
+their shadow attenuation, strongest at edges and weaker through veins; it is a
+local material patch, not a scene-wide painted-light filter.
+`render3d/vineLeafLag.ts` gives tips a bounded damped lag behind their attachments on
+the simulation clock, with matching vertex deformation in the lit, depth and
+point-shadow materials. Pausing freezes it, seeking/teleporting resets it, and
+blade roots never detach. The editor uses the same geometry in its rest pose.
+
+For **two-ended spans**, both attachments retain their material roll and the
+second end keeps its full gauge, rather than tapering to a free tip. The planar
+section normal follows the smooth tangent without adding roll; the strand tube
+frames use minimal-rotation quaternion transport through bends. Local tensile
+strain slightly narrows the bundle by `1 / sqrt(stretch)` (bounded at 30% strain).
+`render/vineTwist.ts` adds a render-owned torsional rod on fixed rest stations:
+elastic torque is the gradient of `(angle gradient - preferred twist density)`,
+where tension relaxes the helical bundle's preferred twist by up to 0.9 rad/m.
+Uniform tension cannot unwind rotationally fixed ends; differential strain
+creates a small twist between them. Waves travel at 2.8 m/s with 5/s velocity
+damping, CFL-safe substeps, and a 0.45 rad visual bound. Pausing freezes angles;
+seeking, time gaps over 0.1 s, or clearing the layer resets history.
+Nearly coincident attachments (under 2 cm) skip the unresolved twist solve, and
+changing material length starts clean angular history. Leaf outward
+directions follow the same material roll while their roots stay on the braid's
+exposed support edge. Tests exercise differential strain, fixed boundaries,
+release/settling and blade clearance under actual player pull and release.
+This is a compliant **visual approximation**, not a coupled 3D elastic rod:
+the existing deterministic 2D solver still owns tension, bending and player
+loads, and decorative torsional torque never changes gameplay. Two-ended vines
+are treated as tied at both ends; separately authored axial swivels and 3D
+twist-induced buckling are not modelled.
+
+`/vine-preview.html` is a dev-only live-physics material study with close-up,
+pause, half-second frame stepping and backlight controls. **Two-ended span**
+switches to a real player load fixture; **Pull** deploys/retracts the player's
+hook, **Release** removes it and **Reset span** restores the initial pose. Its
+frame/load readout supports multi-frame checks. It is excluded from
+the production entry points.
+Select a gameplay vine and use **Braid selected vine** in its inspector to
+author the seed, or **Plain vine** to remove it. The seed is render-only and
+survives save/load and copy/undo without changing the physics.
+
 Drawn in the scene rather than painted flat over it, and that is the whole point
 of the 3D half existing: **the 2D overlay is dropped in every 3D-only view the
 editor has and in every orbited one**, being a projection of the gameplay plane,

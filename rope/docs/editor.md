@@ -1,5 +1,28 @@
 # Level editor
 
+## Braid gameplay vines
+
+Select a strand made with **+ Vine**, open **Braid** in its inspector, and click
+**Braid selected vine**. This restores the three intertwined stems from
+`add-boulder-and-root-generation`, including variation in twist, thickness and
+separation, a tapered free end and sparse hanging leaves. Change **Vine seed**
+and click again to regenerate; **Plain vine** restores the plain green cord.
+The braid follows the simulated strand in both 2D and 3D, appears in the editor
+preview, and saves its `braidSeed` with the level. These actions support undo.
+The 3D braid uses continuous smooth tubes with unequal stem widths, gradual
+taper, loose and tight growth stretches, broad painted bark/olive patches and
+subtle ridges. Asymmetric leaves vary from small to mature blades, clustered
+around unevenly spaced nodes with bare gaps. They hang directly from the braid
+without little stems, with painted veins and small tip movements in play. The
+blades grow outward from the actual tube surface before drooping, keeping their
+edges clear of the braided stems. The preview and playtest share this renderer;
+all changes remain render-only.
+Vines attached at both ends keep full thickness at both attachments. Their
+braid, paint and leaves stay on the same physics-link sections during uneven
+stretching. Smooth section transport and a restrained, damped twist response
+follow player pulls and releases, with roll held at both tied ends. These are
+visual responses to the existing 2D physics, shared by preview and playtest.
+
 The **`/editor`** page (its own HTML page `editor.html` → `src/editorMain.ts`, distinct
 from the game at `/`) runs an in-browser level editor (`src/editor/`, its own canvas loop +
 DOM overlay). Dev serves `/editor` via a rewrite in `vite.config.ts`; production maps it to

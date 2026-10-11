@@ -489,13 +489,15 @@
       "anchor": 7,
       "length": 435.00000000000006,
       "stiffness": 0.3,
-      "viscosity": 0.25
+      "viscosity": 0.25,
+      "braidSeed": 1701
     },
     {
       "anchor": 8,
       "length": 265.00000000000006,
       "stiffness": 0.3,
-      "viscosity": 0.25
+      "viscosity": 0.25,
+      "braidSeed": 1798
     }
   ],
   "player": {
