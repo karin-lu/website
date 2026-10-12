@@ -9,6 +9,8 @@ saves the preferences. Safe to re-run. The scene exporter does not need it:
 it imports the packages from the repo itself."""
 
 import os
+import stat
+import subprocess
 import sys
 
 import addon_utils
@@ -29,13 +31,37 @@ if repo is None:
 root = repo.directory
 os.makedirs(root, exist_ok=True)
 dest = os.path.join(root, NAME)
+
+
+def is_junction(path):
+    # Blender 4.2's Python predates os.path.isjunction (Python 3.12).
+    try:
+        return os.lstat(path).st_reparse_tag == stat.IO_REPARSE_TAG_MOUNT_POINT
+    except (OSError, AttributeError):
+        return False
+
+
 if os.path.islink(dest):
     if os.path.realpath(dest) != os.path.realpath(SRC):
         os.unlink(dest)
+elif is_junction(dest):
+    if os.path.realpath(dest) != os.path.realpath(SRC):
+        sys.exit(f"[{NAME}] {dest} is a junction to another checkout; refusing to replace it")
 elif os.path.exists(dest):
     sys.exit(f"[{NAME}] {dest} exists and is not a link this script made; remove it first")
-if not os.path.islink(dest):
-    os.symlink(SRC, dest)
+if not os.path.islink(dest) and not is_junction(dest):
+    try:
+        os.symlink(SRC, dest, target_is_directory=True)
+    except OSError as exc:
+        if os.name != "nt" or exc.winerror != 1314:
+            raise
+        # A directory junction needs no administrator/Developer Mode privilege.
+        # Both arguments are single-quoted PowerShell literals, not shell input.
+        quoted_dest = dest.replace("'", "''")
+        quoted_src = SRC.replace("'", "''")
+        subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command",
+                        f"New-Item -ItemType Junction -Path '{quoted_dest}' -Target '{quoted_src}' | Out-Null"],
+                       check=True)
 print(f"[{NAME}] {dest} -> {SRC}")
 
 bpy.ops.extensions.repo_refresh_all()

@@ -11,6 +11,11 @@ The geometry objects it used to draw with are gone from the format, and `without
 Collision is authored in the editor exactly as before, and nothing about the sim can change from a Blender edit.
 Deriving outlines from the meshes was considered and rejected: a geometry tweak would have been a physics change.
 
+The [Roots extension](blender-roots.md) grows painterly branching wood from
+independent line sketches, with taper, angular wood planes and painted fibres. It
+rebuilds before other growth during scene export; its guides never ship or modify
+the editor's collision. Install with `just roots-install`.
+
 There is no foreground and no backdrop, only meshes.
 A ledge the ball rolls past and a wall 40 m back in the fog are objects in the same file, and the file has no layers a level has to know about.
 

@@ -1,0 +1,11 @@
+schema_version = "1.0.0"
+id = "roots"
+version = "0.4.0"
+name = "Roots"
+tagline = "Grow flowing painterly roots from branching line sketches"
+maintainer = "Tristan Bray"
+type = "add-on"
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+[build]
+paths_exclude_pattern = ["__pycache__/", "test_*.py", "preview*.py"]

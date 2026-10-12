@@ -1012,6 +1012,25 @@ def grow_painted(scene, warnings):
     2026-10-02 (when the ivy add-on was called moss) to the ivy names, which the
     moss add-on must not mistake for its own."""
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # Git with core.symlinks=false checks these three directory links out as
+    # tiny text files on Windows. Mount the same shared package explicitly in
+    # that case; leave real links and installed extensions alone.
+    import importlib.util
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent
+    for package in ("ivy", "moss", "foliage"):
+        link = root / package / "stampbrush"
+        if not link.is_file() or link.read_text().strip() != "../stampbrush":
+            continue
+        name = package + ".stampbrush"
+        if name not in sys.modules:
+            folder = root / "stampbrush"
+            spec = importlib.util.spec_from_file_location(
+                name, folder / "__init__.py", submodule_search_locations=[str(folder)])
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[name] = module
+            spec.loader.exec_module(module)
     import ivy
     import moss
 
@@ -1023,6 +1042,19 @@ def grow_painted(scene, warnings):
         # (2026-10-04).
         for o in [ob, *ob.children_recursive]:
             o.hide_render = True
+
+    # Roots rebuild first: ivy/moss may be painted onto their surfaces. The
+    # independent local guides are the recipe; linked collision is untouched.
+    if any(ob.get('grown_by') == 'roots' for ob in scene.objects):
+        import roots
+
+        roots.register()
+        for ob, result in roots.rebuild_all(scene):
+            if result is None:
+                warnings.append(f"{ob.name}: {ob.roots.status}; roots not exported")
+                drop(ob)
+            else:
+                log(f"roots {ob.name}: {ob.roots.status}")
 
     ivy.register()
     for ob, result in ivy.rebuild_all(scene):
@@ -1229,7 +1261,9 @@ def main():
         export_yup=True,
         export_normals=True,
         export_texcoords=True,
-        export_tangents=False,
+        # Roots' relief maps are baked in MikkTSpace. Carry that same basis;
+        # Three's derivative fallback can shade rotated chart seams differently.
+        export_tangents=any(ob.get('grown_by') == 'roots' for ob in kept),
         export_materials="EXPORT",
         export_image_format="AUTO",
         export_cameras=False,

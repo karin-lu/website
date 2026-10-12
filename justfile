@@ -87,6 +87,10 @@ ivy-install:
 foliage-install:
     cd rope && blender -b --python tools/blender/addon_install.py -- foliage
 
+# Grow painterly roots from branching line guides. See rope/docs/blender-roots.md.
+roots-install:
+    cd rope && blender -b --python tools/blender/addon_install.py -- roots
+
 # Install the formations add-on (rope/tools/blender/formations): guides, the
 # rock masses generated from them, and what grows on them. Then the Formations
 # tab is in the 3D viewport's sidebar.

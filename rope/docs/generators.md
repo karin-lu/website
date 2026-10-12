@@ -11,3 +11,8 @@ What survives, in Blender rather than behind the editor:
 - The **boulder generator** (`tools/blender/boulders`) is what the formations add-on builds a formation's rock with ([blender-formations](blender-formations.md)).
   `bun run generators:setup` still makes the `rope/.venv` it runs in (numpy, scipy, shapely).
 - The **mushroom patch** add-on (`tools/blender/mushrooms/mushroom_patch_tools.py`) is a Blender add-on in its own right: a patch is grown in the scene file like any other dressing.
+- The **root generator** from `add-boulder-and-root-generation` now lives in the
+  Roots extension (`tools/blender/roots`): branching line sketches, angular wood
+  planes, local taper and painted fibres, with legacy exact-outline support
+  ([blender-roots](blender-roots.md)).
+  It uses the scene exporter, rather than the retired editor service/asset format.
