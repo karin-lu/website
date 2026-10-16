@@ -45,6 +45,7 @@ import {
   BALL_MESH,
   HDRI_ASSETS,
   IRON_SURFACE,
+  ROOT_SURFACE,
   MESH_ASSETS,
   RAW_ASSETS,
   surfaceName,
@@ -243,6 +244,7 @@ export function runAssetChecks(): AssetCheck[] {
   for (const spec of Object.values(LEVELS)) {
     for (const body of normalizeLevelData(spec.data).bodies) {
       for (const o of body.objects) {
+          if (o.type === "collision" && o.root) worn.add(ROOT_SURFACE);
         if (o.type === "collision" && o.shape.kind === "belt") worn.add(surfaceName(o.shape.texture));
       }
     }

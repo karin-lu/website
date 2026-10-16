@@ -35,6 +35,7 @@
 // detaches between steps, which is the same rule the 2D renderer already keeps.
 
 import * as THREE from "three";
+import { fuseRootForks } from "./rootFork";
 
 import type { CollisionObject2D, CollisionShape2D } from "../engine/body";
 import { WaterArea } from "../engine/body";
@@ -503,22 +504,31 @@ export class BodyVisual {
   private mountRoots(data: LevelBodyData, z: number): void {
     const built = this.built!;
     this.debugZ = z;
-    const material = rootBarkMaterial(data.color ?? DEFAULT_ROOT_COLOR);
+    const roots = new Map<number, THREE.BufferGeometry>();
+    const parents = new Map<number, number>();
     data.objects.forEach((o, i) => {
       if (!isCollisionObject(o) || !o.root || o.shape.kind !== "curve") return;
       const geometry = rootGeometry(o.shape, { trunk: o.root.parent === undefined, seed: i });
       if (!geometry) return;
       const world = worldPlacement(data, o);
       const pos = world.pos.sub(built.origin).rotated(-built.rotation);
-      const piece = this.piece(pos.x, pos.y, world.rot - built.rotation, built.data.objects[i] ?? o);
+      geometry.rotateZ(-(world.rot - built.rotation));
+      geometry.translate(pos.x, -pos.y, 0);
+      roots.set(i, geometry);
+      if (o.root.parent !== undefined) parents.set(i, o.root.parent);
+    });
+    this.rootSignature = rootSignatureOf(data);
+    if (!roots.size) return;
+    const material = rootBarkMaterial(data.color ?? DEFAULT_ROOT_COLOR);
+    for (const [i, geometry] of fuseRootForks(roots, parents)) {
+      const piece = this.piece(0, 0, 0, built.data.objects[i] ?? data.objects[i]!);
       const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.position.z = z;
       piece.add(mesh);
       this.rootPieces.push({ piece, geometry });
-    });
-    this.rootSignature = rootSignatureOf(data);
+    }
   }
 
   private disposeRoots(): void {

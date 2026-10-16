@@ -90,6 +90,7 @@ export const DEFAULT_TEXTURE: MaterialName = "wood";
 // the manifest above and because both readers have to agree about it: a scene
 // with any chain in it loads this set, ball level or not.
 export const IRON_SURFACE = "painted steel";
+export const ROOT_SURFACE = "painted root";
 
 // The avatar's own model (`MESH_ASSETS`, and see `BallVisual`). Named here for
 // the same reason the surface above is: the preload list a page starts fetching
@@ -141,6 +142,8 @@ const SOLID_ROUGHNESS = 0.8;
 export interface TextureMap {
   file: string;
   sha256: string;
+  // A contributor may publish a new map in their fork's asset release.
+  storeRepo?: string;
   // The file's size in bytes, which is what the loading screen's bar is a
   // fraction OF (see render3d/download.ts). It is stated here rather than read
   // off the responses because a denominator that arrives with the download is
@@ -267,6 +270,20 @@ export interface TextureAsset {
 // `cli assets` holds the whole directory to a byte budget; see
 // docs/asset-store.md.
 export const TEXTURE_ASSETS: Record<string, TextureAsset> = {
+  "painted root": {
+    maps: { base: {
+      file: "/textures/painted-root-base.webp",
+      storeRepo: "karin-lu/website",
+      raw: "painted-root/painted-root-base.png",
+      sha256: "a77de8328c8289642a1af46a51b6db224c6267ebfafc0494276282cde9206413",
+      bytes: 196336,
+    } },
+    tile: 1, roughness: 0.94, metalness: 0,
+    fallback: "wood",
+    source: "docs/root-bark-generation.md",
+    author: "OpenAI image generation, directed by Karin",
+    license: "Generated for this project",
+  },
   // The ball and chain's own surface: oil strokes, not a photograph. Baked by
   // `scripts/bake-strokes.ts` into `assets-src/painted-steel/` and then
   // through the ordinary pipeline like any set, so it is reproducible and
@@ -723,7 +740,7 @@ export type LoadedMaps = Partial<Record<Slot, THREE.Texture>>;
 
 let textureLoader: THREE.TextureLoader | null = null;
 
-function loadMaps(name: string, asset: TextureAsset): Promise<LoadedMaps> {
+export function loadMaps(name: string, asset: TextureAsset): Promise<LoadedMaps> {
   const cached = imageCache.get(name);
   if (cached) return cached;
   textureLoader ??= new THREE.TextureLoader();

@@ -27,7 +27,7 @@ import { LAYER_HOOK, MASK_ALL, MASK_SOLID, RigidBody2D, type PhysicsBody2D } fro
 import { circleShape, isConvexLoop, polyArea, polyShapeCentred } from "../engine/shapes";
 import { World } from "../engine/world";
 import { buildLevelBodies } from "../level/buildBodies";
-import { isCollisionObject, scaleLevelData, type LevelBodyData, type RawLevelData } from "../level/levelFormat";
+import { DEFAULT_ROOT_COLOR, isCollisionObject, scaleLevelData, type LevelBodyData, type RawLevelData } from "../level/levelFormat";
 import { rootProblems } from "../level/roots";
 import { curveLine, strokeCurve } from "../lib/stroke";
 import { cubicAt, pathNodesOf } from "../lib/path";
@@ -45,7 +45,8 @@ import {
   syncRoots,
   type RootItem,
 } from "../editor/rootEditing";
-import { rootGeometry } from "../render3d/rootMesh";
+import { rootBarkMaterial, rootGeometry, rootCenterline } from "../render3d/rootMesh";
+import { fuseRootForks } from "../render3d/rootFork";
 import { readFileSync } from "node:fs";
 import * as THREE from "three";
 import type { CollisionObject2D } from "../engine/body";
@@ -565,7 +566,57 @@ function caseMesh(): RootResult {
   );
   const none = rootGeometry({ width: 0.1, verts: [{ x: 0, y: 0 }, { x: 0, y: 0 }] }, { trunk: true, seed: 0 });
   c.check("a curve of no length grows nothing", none === null);
+  // Find each duplicated UV seam without pinning the tessellation count.
+  const uv = g.getAttribute("uv"), age = g.getAttribute("rootAge");
+  let seam = true, unit = true, first = 0;
+  for (let i = 0; i < pos.count; i++) {
+    unit &&= Math.abs(Math.hypot(nrm.getX(i), nrm.getY(i), nrm.getZ(i)) - 1) < 1e-5;
+    if (i + 1 === pos.count || uv.getY(i + 1) !== uv.getY(i)) {
+      seam &&= Math.abs(pos.getX(i) - pos.getX(first)) < 1e-6
+        && Math.abs(pos.getY(i) - pos.getY(first)) < 1e-6
+        && Math.abs(pos.getZ(i) - pos.getZ(first)) < 1e-6
+        && Math.abs(nrm.getX(i) - nrm.getX(first)) < 1e-6
+        && Math.abs(nrm.getY(i) - nrm.getY(first)) < 1e-6
+        && Math.abs(nrm.getZ(i) - nrm.getZ(first)) < 1e-6
+        && Math.abs(uv.getX(i) - uv.getX(first) - 1) < 1e-6;
+      first = i + 1;
+    }
+  }
+  c.check("the bark wrap closes in both position and normal, exactly one UV turn apart", seam);
+  c.check("fluted surface normals stay unit length, including the caps", unit);
+  c.check("the thin tip wears younger skin than the woody base", age.getX(0) > 0.9 && age.getX(pos.count - 1) < 0.1);
+  g.dispose();
   return { name: "root-mesh - the drawn root is a closed tube as wide as its bar", passed: c.passed(), details: c.details };
+}
+
+function caseBark(): RootResult {
+  const c = claims();
+  const bark = rootBarkMaterial(DEFAULT_ROOT_COLOR);
+  const custom = rootBarkMaterial("#8b785f");
+  c.check("roots share texture storage across body colours", bark.map === custom.map
+    && bark.normalMap === custom.normalMap && bark.roughnessMap === custom.roughnessMap);
+  c.check("custom tint never mutates the default material", bark !== custom
+    && bark === rootBarkMaterial(DEFAULT_ROOT_COLOR) && bark.color.equals(new THREE.Color(1, 1, 1)));
+  c.check("albedo is colour data; relief and roughness are linear data", bark.map!.colorSpace === THREE.SRGBColorSpace
+    && bark.normalMap!.colorSpace === THREE.NoColorSpace && bark.roughnessMap!.colorSpace === THREE.NoColorSpace);
+  const map = bark.map as THREE.DataTexture;
+  const { width, height } = map.image;
+  const data = map.image.data!;
+  // A tile edge should be no more conspicuous than nearby texel transitions.
+  // Check both axes; exact duplicate edge texels are not required for a repeat.
+  let edge = 0, interior = 0;
+  for (let y = 0; y < height; y++) for (let channel = 0; channel < 3; channel++) {
+    edge += Math.abs(data[(y * width) * 4 + channel]! - data[(y * width + width - 1) * 4 + channel]!);
+    interior += Math.abs(data[(y * width + 1) * 4 + channel]! - data[y * width * 4 + channel]!);
+  }
+  for (let x = 0; x < width; x++) for (let channel = 0; channel < 3; channel++) {
+    edge += Math.abs(data[x * 4 + channel]! - data[((height - 1) * width + x) * 4 + channel]!);
+    interior += Math.abs(data[(width + x) * 4 + channel]! - data[x * 4 + channel]!);
+  }
+  c.check(`texture boundaries are continuous at texel scale (${fmt(edge / Math.max(1, interior), 2)}× adjacent variation)`, edge < interior * 2 + 1);
+  c.check("grain repeats with mipmapping for distant roots", map.wrapS === THREE.RepeatWrapping
+    && map.wrapT === THREE.RepeatWrapping && map.generateMipmaps && map.minFilter === THREE.LinearMipmapLinearFilter);
+  return { name: "root-bark - shared painted maps wrap cleanly and preserve authored tint", passed: c.passed(), details: c.details };
 }
 
 // ---------------------------------------------------------------------------
@@ -639,6 +690,55 @@ function withCanvasStub<T>(make: () => T): T {
 }
 
 export function runRootCases(): RootResult[] {
-  return [caseStroke(), caseFold(), caseFormat(), caseHookOnly(), caseSpring(), caseTree(), caseLint(), caseMesh(), caseCuffDepth()];
+  return [caseStroke(), caseFold(), caseFormat(), caseHookOnly(), caseSpring(), caseTree(), caseLint(), caseMesh(), caseBark(), caseOrganicFork(), caseCuffDepth()];
+}
+
+function caseOrganicFork(): RootResult {
+  const c = claims();
+  const corner = { width: 0.12, tip: 0.05, verts: [{ x: 0, y: 0 }, { x: 0.5, y: 0 }, { x: 0.5, y: 0.5 }] };
+  const before = JSON.stringify(corner);
+  const line = rootCenterline(corner, 0);
+  let abrupt = 0;
+  for (let i = 1; i + 1 < line.length; i++) {
+    const a = line[i]!.sub(line[i - 1]!).normalized(), b = line[i + 1]!.sub(line[i]!).normalized();
+    if (a.dot(b) < 0.95) abrupt++;
+  }
+  c.check("a right-angle authoring corner becomes a continuously turning visual spine", abrupt === 0);
+  c.check("rounding preserves endpoints and never rewrites the collision curve", JSON.stringify(corner) === before && line[0]!.distanceTo(new Vec2(0, 0)) < 1e-9 && line.at(-1)!.distanceTo(new Vec2(0.5, 0.5)) < 1e-9);
+  const parent = rootGeometry({ width: 0.12, tip: 0.06, verts: [{ x: 0, y: 0 }, { x: 0.6, y: 0 }] }, { trunk: true, seed: 0 })!;
+  const child = rootGeometry({ width: 0.065, tip: 0.025, verts: [{ x: 0.3, y: 0 }, { x: 0.48, y: -0.28 }] }, { trunk: false, seed: 1 })!;
+  const meshes = fuseRootForks(new Map([[0, parent], [1, child]]), new Map([[1, 0]]));
+  c.check("the fused surface retains both authored branch identities for picking", meshes.has(0) && meshes.has(1));
+  const edges = new Map<string, number>();
+  let invalid = 0;
+  let grainJumps = 0, joinedVertices = 0;
+  for (const g of meshes.values()) {
+    const p = g.getAttribute("position"), n = g.getAttribute("normal");
+    const uv = g.getAttribute("uv"), join = g.getAttribute("rootJoin");
+    const point = (i: number): string => [p.getX(i), p.getY(i), p.getZ(i)].map(v => Math.round(v * 1e7)).join(",");
+    for (let i = 0; i < p.count; i++) {
+      const norm = Math.hypot(n.getX(i), n.getY(i), n.getZ(i));
+      if (!Number.isFinite(p.getX(i) + p.getY(i) + p.getZ(i) + norm) || norm < 0.99 || norm > 1.01) invalid++;
+      if (join.getX(i) > 0.5) joinedVertices++;
+    }
+    for (let i = 0; i < p.count; i += 3) {
+      const vertices = [point(i), point(i + 1), point(i + 2)];
+      for (let k = 0; k < 3; k++) {
+        const ia = i + k, ib = i + (k + 1) % 3;
+        const length = Math.hypot(p.getX(ia) - p.getX(ib), p.getY(ia) - p.getY(ib), p.getZ(ia) - p.getZ(ib));
+        if (length < 0.015 && Math.abs(uv.getY(ia) - uv.getY(ib)) > 0.06) grainJumps++;
+        const a = vertices[k]!, b = vertices[(k + 1) % 3]!;
+        const key = a < b ? `${a}/${b}` : `${b}/${a}`;
+        edges.set(key, (edges.get(key) ?? 0) + 1);
+      }
+    }
+    g.dispose();
+  }
+  const open = [...edges.values()].filter(count => count !== 2).length;
+  c.check(`the fork is one closed surface, with no open join or buried caps (${open} unmatched edges)`, open === 0);
+  c.check("the blended fork has finite vertices and unit shading normals", invalid === 0);
+  c.check(`the grain has no phase jump across the fork (${grainJumps} short edges with discontinuous grain)`, grainJumps === 0);
+  c.check("the saddle carries a local shading transition", joinedVertices > 0);
+  return { name: "root-organic-fork - rounded growth and a continuous pickable junction", passed: c.passed(), details: c.details };
 }
 

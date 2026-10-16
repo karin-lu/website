@@ -40,6 +40,7 @@ export const ASSET_TAG = process.env.ASSET_TAG ?? "assets";
 // check - wants the files rather than the manifests. One list means a texture map
 // cannot be left out of a check by being in the other manifest.
 export interface StoredAsset {
+  storeRepo?: string;
   // Manifest key, qualified by the map slot for a texture, so a failure names
   // the thing to go and fix. A file several keys name (a PACK - see
   // `MeshAsset.node`) is listed once, under all of them.
@@ -94,7 +95,7 @@ export function storedAssets(): StoredAsset[] {
   for (const [key, asset] of Object.entries(TEXTURE_ASSETS)) {
     const maps = asset.maps;
     for (const [slot, map] of Object.entries(maps)) {
-      if (map) out.push({ key: `${key}.${slot}`, file: map.file, sha256: map.sha256, bytes: map.bytes });
+      if (map) out.push({ key: `${key}.${slot}`, file: map.file, sha256: map.sha256, bytes: map.bytes, storeRepo: map.storeRepo });
     }
     // Belt and braces: `textureMaps` is what the runtime iterates, so a slot
     // added there and not here would be a file nothing checks.
@@ -134,8 +135,12 @@ export function assetName(asset: { file: string; name?: string }): string {
   return asset.name ?? basename(asset.file);
 }
 
-export function assetUrl(asset: { file: string; name?: string }): string {
-  return `https://github.com/${ASSET_REPO}/releases/download/${ASSET_TAG}/${assetName(asset)}`;
+export function assetStoreRepo(asset: { storeRepo?: string }): string {
+  return process.env.ASSET_REPO ?? asset.storeRepo ?? ASSET_REPO;
+}
+
+export function assetUrl(asset: { file: string; name?: string; storeRepo?: string }): string {
+  return `https://github.com/${assetStoreRepo(asset)}/releases/download/${ASSET_TAG}/${assetName(asset)}`;
 }
 
 export function sha256(bytes: Uint8Array): string {

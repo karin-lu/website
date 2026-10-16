@@ -1,5 +1,10 @@
 # The asset store
 
+An individual texture map may name `storeRepo` when its binary is published in
+a contributor's fork. Fetching and publishing use that repository's `assets`
+release for the map; other assets retain the default store. An explicit
+`ASSET_REPO` environment override takes precedence for complete mirrors.
+
 Five kinds of binary: props (`.glb` under `public/meshes/`), authored texture maps (`.webp` under `public/textures/`), raw maps (`RAW_ASSETS`, none since the water's flipbook and foam mask were retired on 2026-10-05; `public/water/`), captured skies (`.hdr` under `public/hdri/`) and the levels' Blender scenes (`public/scenes/`, see [below](#blender-scenes-in-the-store)).
 Since 2026-09-29 a level's props and surfaces live in its Blender scene (see [blender-scenes](blender-scenes.md)), so the prop and texture manifests hold only what the GAME draws itself: the ball (`iron-ball`), its iron (`painted steel`), and whatever surface a conveyor band names.
 Every set and prop the levels used to name was pruned then (the release still holds their files, which older commits pin); the pipeline below is still how one is added.

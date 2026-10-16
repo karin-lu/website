@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "scripts/root-study.html"
+        ],
+        "createdAt": "2026-10-16T13:33:25.500Z",
+        "reason": "Codex verified all text against explicit opaque backgrounds: primary 11.35:1, secondary 10.37:1, button 8.89:1. Remaining findings misclassify 3D material/light colors in this visual study as interface text."
+      }
+    ]
+  }
+}
