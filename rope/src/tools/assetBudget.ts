@@ -45,7 +45,7 @@ import {
   BALL_MESH,
   HDRI_ASSETS,
   IRON_SURFACE,
-  ROOT_SURFACE,
+  ROOT_SURFACES,
   MESH_ASSETS,
   RAW_ASSETS,
   surfaceName,
@@ -240,11 +240,11 @@ export function runAssetChecks(): AssetCheck[] {
   // Every prop and texture entry is drawn by something (UNDRAWN above). The
   // game's own things are named in code; a conveyor's band wears the surface
   // its level names (`BeltLook.texture`), resolved as the renderer resolves it.
-  const worn = new Set<string>([IRON_SURFACE]);
+  // Root bark variants are built-in renderer choices exposed in the editor.
+  const worn = new Set<string>([IRON_SURFACE, ...Object.values(ROOT_SURFACES)]);
   for (const spec of Object.values(LEVELS)) {
     for (const body of normalizeLevelData(spec.data).bodies) {
       for (const o of body.objects) {
-          if (o.type === "collision" && o.root) worn.add(ROOT_SURFACE);
         if (o.type === "collision" && o.shape.kind === "belt") worn.add(surfaceName(o.shape.texture));
       }
     }

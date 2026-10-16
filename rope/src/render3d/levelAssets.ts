@@ -28,7 +28,7 @@ import {
   BALL_MESH,
   HDRI_ASSETS,
   IRON_SURFACE,
-  ROOT_SURFACE,
+  rootSurfaceFor,
   MESH_ASSETS,
   surfaceName,
   TEXTURE_ASSETS,
@@ -102,7 +102,7 @@ export function levelStoredFiles(raw: RawLevelData, controller?: string): Stored
     // A conveyor's band wears its own surface, drawn by the game (see
     // `BodyVisual.mountBelt`).
     for (const object of body.objects) {
-      if (object.type === "collision" && object.root) addSurface(ROOT_SURFACE);
+      if (object.type === "collision" && object.root) addSurface(rootSurfaceFor(object.root.bark));
       if (object.type === "collision" && object.shape.kind === "belt") addSurface(object.shape.texture);
     }
   }

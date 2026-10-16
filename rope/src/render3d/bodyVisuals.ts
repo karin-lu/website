@@ -519,8 +519,9 @@ export class BodyVisual {
     });
     this.rootSignature = rootSignatureOf(data);
     if (!roots.size) return;
-    const material = rootBarkMaterial(data.color ?? DEFAULT_ROOT_COLOR);
     for (const [i, geometry] of fuseRootForks(roots, parents)) {
+      const object = data.objects[i]!;
+      const material = rootBarkMaterial(data.color ?? DEFAULT_ROOT_COLOR, isCollisionObject(object) ? object.root?.bark : undefined);
       const piece = this.piece(0, 0, 0, built.data.objects[i] ?? data.objects[i]!);
       const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = true;

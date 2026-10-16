@@ -62,7 +62,7 @@ Per branch, in the branch's own frame:
 - lateral roots initially follow the parent's tangent, then ease into their own direction over several base radii. The shoulder is broader underneath and tighter in the inner crotch, with a subtle uneven ridge through the saddle. This uses the authored parent links, processed parent-first, including branches growing back along a parent. Endpoints and all collision data stay unchanged;
 - bark phase is inherited at each junction, with direction reversed for a backward-growing lateral. Circular wrap coordinates and longitudinal coordinates blend continuously through the join, bending the painted grain instead of switching between independently wrapped tubes. The same coordinates drive colour and relief. The `rootJoin` attribute reduces normal-map strength locally through the saddle so a deep shading line does not suggest an open gap;
 - rounded caps at both ends, so the tip ends in a point and a branch's base, buried in its parent's centreline, never shows an open tube;
-- painterly bark (`rootBark.ts`): a shared 1024-square generated painting, pinned in the ordinary texture asset manifest, with broad tan plates, umber fissures, warm painted lips and dry-brush hatching. Relief is derived once from that same image so the normal map follows its painted ridges. Grain follows arc length, repeating every 65 cm. The procedural 512 × 1024 maps remain a headless-safe loading fallback. The image loads through the existing asset tracker and level preloader, so frame grabs wait for the finished surface. See [generation record and prompt](root-bark-generation.md);
+- painterly bark (`rootBark.ts`): a shared 1024-square generated painting, pinned in the ordinary texture asset manifest, with uneven broad tan plates, light clay grooves, interrupted grain and occasional knots. Fine hatching is omitted to fit the vines' quieter paint. Relief is derived once from that same image at normal strength 0.45, with uniform matte roughness 0.91, so the old procedural roughness cannot add unrelated detail. Grain follows arc length, repeating every 65 cm. The procedural 512 × 1024 maps remain a headless-safe loading fallback. The image loads through the existing asset tracker and level preloader, so frame grabs wait for the finished surface. See [generation record and prompt](root-bark-generation.md);
 - the body's colour remains a tint, expressed relative to `DEFAULT_ROOT_COLOR`. The reference paint is multiplied by 0.58 in linear space to fit the game's earthy palette. Thin roots blend toward smoother young skin. Maps and materials are cached, and springing carries the surface with its body. There is no per-frame mesh or texture generation.
 
 The visual direction is exposed woody roots: thick established axes giving way to finer lateral roots, with uneven branching chosen by the author. It draws on [US Forest Service root architecture observations](https://research.fs.usda.gov/treesearch/59121); it does not invent extra branches outside the authored hook geometry.
@@ -80,6 +80,24 @@ In the editor a root's mesh is rebuilt **in place** as it is drawn and reshaped 
 The 2D renderer draws a root's pieces as the grate lattice every hook-only body wears there.
 
 ## The editor: `+ Root`
+
+Select a root curve and use **bark texture** in its shape inspector:
+**Original detailed** is the texture committed on the roots branch,
+**Broad grain** is the supplied lower-detail painting with broad grooves,
+and **Soft selective** is the latest reference-based painting with selectively
+darkened grooves and approximately 20% less brush detail. The latter remains
+the default for roots without an explicit choice.
+
+Changing bark applies to all root branches in the selected body's tree so fused
+joins keep one surface. It supports undo/redo, save/load and copying; a new
+branch inherits its parent's choice. The saved `root.bark` is `original`,
+`broad` or `soft`. Root shape, collision and colour tint are unchanged.
+Maps and materials are cached by variant and tint, and the preloader includes
+only variants used by the level. Original detailed retains its stronger normal
+relief and procedural roughness; both simpler choices use strength 0.45 and
+matte roughness 0.91. All share the same grain coordinates through joins.
+The editor's selection highlight refreshes when an asynchronously loaded source
+material changes, so a newly selected variant is visible without deselecting.
 
 `+ Root` (Level workspace, scene layer) draws a root as a run of presses, the pen tool's way: each **press places a node**, and **dragging before releasing pulls out that node's Bézier handles** (mirrored, so the curve runs smoothly through it; a drag inside the click slop leaves a corner).
 **Enter** or a double-click grows it, **Esc** drops it.

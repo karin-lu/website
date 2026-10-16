@@ -3,7 +3,8 @@
 // their domain warp, so neither the wrap nor the longitudinal repeat has a seam.
 import * as THREE from "three";
 import { DEFAULT_ROOT_COLOR } from "../level/levelFormat";
-import { loadMaps, ROOT_SURFACE, TEXTURE_ASSETS, trackPending } from "./assets";
+import { loadMaps, rootSurfaceFor, TEXTURE_ASSETS, trackPending } from "./assets";
+import { rootBarkVariant, type RootBarkVariant } from "../level/rootAppearance";
 
 const WIDTH = 512, HEIGHT = 1024;
 const TAU = Math.PI * 2;
@@ -31,10 +32,11 @@ interface BarkMaps {
 }
 let maps: BarkMaps | undefined;
 const materials = new Map<string, THREE.MeshStandardMaterial>();
-let paintedMaps: Promise<{ map: THREE.Texture; normalMap: THREE.DataTexture } | undefined> | undefined;
+const paintedMaps = new Map<RootBarkVariant, Promise<{ map: THREE.Texture; normalMap: THREE.DataTexture } | undefined>>();
 
-export function rootBarkMaterial(color: string): THREE.MeshStandardMaterial {
-  const cached = materials.get(color);
+export function rootBarkMaterial(color: string, bark?: RootBarkVariant): THREE.MeshStandardMaterial {
+  const variant = rootBarkVariant(bark), key = `${variant}:${color}`;
+  const cached = materials.get(key);
   if (cached) return cached;
   maps ??= buildMaps();
   // The maps already contain the default bark palette. Apply only the change
@@ -43,7 +45,7 @@ export function rootBarkMaterial(color: string): THREE.MeshStandardMaterial {
   const tint = new THREE.Color(color);
   tint.setRGB(tint.r / reference.r, tint.g / reference.g, tint.b / reference.b);
   const material = new THREE.MeshStandardMaterial({
-    name: "painted-root-bark", color: tint, vertexColors: true,
+    name: `painted-root-bark-${variant}`, color: tint, vertexColors: true,
     ...maps, normalScale: new THREE.Vector2(0.72, 0.72), roughness: 1, metalness: 0,
   });
   // Thin growing ends have finer, smoother skin than established woody roots.
@@ -68,14 +70,21 @@ export function rootBarkMaterial(color: string): THREE.MeshStandardMaterial {
         roughnessFactor = mix(0.82, roughnessFactor, vRootAge);
       `);
   };
-  materials.set(color, material);
+  materials.set(key, material);
   if (typeof document !== "undefined") {
-    paintedMaps ??= loadPaintedMaps();
-    void trackPending(paintedMaps.then(painted => {
+    let pending = paintedMaps.get(variant);
+    if (!pending) { pending = loadPaintedMaps(variant); paintedMaps.set(variant, pending); }
+    void trackPending(pending.then(painted => {
       if (!painted) return;
       material.map = painted.map;
       material.normalMap = painted.normalMap;
-      material.normalScale.set(0.85, 0.85);
+      material.normalScale.setScalar(variant === "original" ? 0.85 : 0.45);
+      // Quiet matte paint: the detailed fallback's roughness grain would add
+      // unrelated fine marks back over the broad, irregular painted plates.
+      if (variant !== "original") {
+        material.roughnessMap = null;
+        material.roughness = 0.91;
+      }
       // The reference's light paint is brought into the game's earthy range;
       // actual lighting and the author's relative tint still shape the result.
       material.color.multiplyScalar(0.58);
@@ -85,8 +94,9 @@ export function rootBarkMaterial(color: string): THREE.MeshStandardMaterial {
   return material;
 }
 
-async function loadPaintedMaps(): Promise<{ map: THREE.Texture; normalMap: THREE.DataTexture } | undefined> {
-  const loaded = await loadMaps(ROOT_SURFACE, TEXTURE_ASSETS[ROOT_SURFACE]!);
+async function loadPaintedMaps(variant: RootBarkVariant): Promise<{ map: THREE.Texture; normalMap: THREE.DataTexture } | undefined> {
+  const surface = rootSurfaceFor(variant);
+  const loaded = await loadMaps(surface, TEXTURE_ASSETS[surface]!);
   if (!loaded.base) return undefined;
   const size = 1024;
   const canvas = document.createElement("canvas");

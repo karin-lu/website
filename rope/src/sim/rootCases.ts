@@ -43,10 +43,12 @@ import {
   setRootSprings,
   slideRootJunction,
   syncRoots,
+  setRootBark,
   type RootItem,
 } from "../editor/rootEditing";
 import { rootBarkMaterial, rootGeometry, rootCenterline } from "../render3d/rootMesh";
 import { fuseRootForks } from "../render3d/rootFork";
+import { levelStoredFiles } from "../render3d/levelAssets";
 import { readFileSync } from "node:fs";
 import * as THREE from "three";
 import type { CollisionObject2D } from "../engine/body";
@@ -54,6 +56,7 @@ import { BallLevel } from "../level/ballLevel";
 import { ScriptedInput, scriptSpec, type PlaytestScript } from "./playtest";
 import { BodyVisual } from "../render3d/bodyVisuals";
 import { ChainLayer } from "../render3d/chainVisual";
+import { Scene3D } from "../render3d/scene";
 
 const DT = 1 / 60;
 
@@ -318,7 +321,10 @@ function caseFormat(): RootResult {
     trunk.shape.kind === "curve" && near(trunk.shape.tip ?? 0, 0.025, 1e-12) && trunk.root !== undefined,
   );
   const { model } = grownModel();
+  setRootBark(model, [model.items.find(isRootItem)!], "broad");
   const disk = modelToDisk(model);
+  const rootFiles = levelStoredFiles(disk).filter(f => f.file.includes("painted-root"));
+  c.check("preloading fetches only the chosen bark variant", rootFiles.length === 1 && rootFiles[0]!.file.endsWith("painted-root-broad-base.webp"));
   const objs = disk.bodies.flatMap((b) => b.objects);
   const roots = disk.bodies[0]!.objects;
   const tags = roots.map((o) => (isCollisionObject(o) ? o.root : undefined));
@@ -338,6 +344,8 @@ function caseFormat(): RootResult {
   const again = modelToDisk(modelFromDisk(disk));
   c.check("...and a second round trip writes the same level", JSON.stringify(again.bodies) === JSON.stringify(disk.bodies));
   const metres = scaleLevelData(disk, PX);
+  c.check("bark choice survives save, load and unit scaling on every branch", metres.bodies[0]!.objects
+    .filter(isCollisionObject).filter(o => o.root).every(o => o.root!.bark === "broad"));
   const problems = rootProblems(metres.bodies[0]!);
   c.check(`the lint finds every branch on its junction (${problems.join("; ") || "none"})`, problems.length === 0);
   return { name: "root-format - the taper and the tree survive the scale and the editor", passed: c.passed(), details: c.details };
@@ -432,6 +440,7 @@ function caseSpring(): RootResult {
 function caseTree(): RootResult {
   const c = claims();
   const { model, trunk, branch, twig } = grownModel();
+  setRootBark(model, [branch], "original");
   const onParent = (child: RootItem, parent: RootItem): number =>
     toWorld(child, child.shape.verts[0]!).distanceTo(rootPointAt(parent, child.root.at));
   c.check(
@@ -452,6 +461,7 @@ function caseTree(): RootResult {
   // Slide the branch's junction toward the trunk's base.
   const target = rootPointAt(trunk, 0.2).add(new Vec2(0.05, 0.05));
   slideRootJunction(model, branch, target);
+  c.check("sliding a join retains the chosen bark on the whole root", [trunk, branch, twig].every(i => i.root.bark === "original"));
   c.check(
     `dragging a branch's first node slides it along its parent (at ${fmt(branch.root.at, 3)}, ${fmt(onParent(branch, trunk) * 1000, 6)} mm off)`,
     near(branch.root.at, projectOntoRoot(trunk, target).at, 1e-12) && branch.root.at < 0.3 && onParent(branch, trunk) < 1e-9,
@@ -465,6 +475,8 @@ function caseTree(): RootResult {
   const at = toWorld(branch, branch.shape.verts[0]!);
   branch.bodyId = 99_999;
   syncRoots(model);
+  setRootBark(model, [branch], "broad");
+  c.check("changing a separated root does not recolour another body", branch.root.bark === "broad" && trunk.root.bark === "original" && twig.root.bark === "original");
   c.check(
     `moved to another body, a branch becomes a trunk where it stood (parent ${branch.root.parent}, ${fmt(toWorld(branch, branch.shape.verts[0]!).distanceTo(at) * 1000, 6)} mm moved)`,
     branch.root.parent === null && toWorld(branch, branch.shape.verts[0]!).distanceTo(at) < 1e-12,
@@ -593,6 +605,9 @@ function caseBark(): RootResult {
   const c = claims();
   const bark = rootBarkMaterial(DEFAULT_ROOT_COLOR);
   const custom = rootBarkMaterial("#8b785f");
+  c.check("variant materials are isolated and reused by variant and tint", rootBarkMaterial(DEFAULT_ROOT_COLOR, "original") !== bark
+    && rootBarkMaterial(DEFAULT_ROOT_COLOR, "broad") !== bark
+    && rootBarkMaterial(DEFAULT_ROOT_COLOR, "broad") === rootBarkMaterial(DEFAULT_ROOT_COLOR, "broad"));
   c.check("roots share texture storage across body colours", bark.map === custom.map
     && bark.normalMap === custom.normalMap && bark.roughnessMap === custom.roughnessMap);
   c.check("custom tint never mutates the default material", bark !== custom
@@ -690,7 +705,30 @@ function withCanvasStub<T>(make: () => T): T {
 }
 
 export function runRootCases(): RootResult[] {
-  return [caseStroke(), caseFold(), caseFormat(), caseHookOnly(), caseSpring(), caseTree(), caseLint(), caseMesh(), caseBark(), caseOrganicFork(), caseCuffDepth()];
+  return [caseStroke(), caseFold(), caseFormat(), caseHookOnly(), caseSpring(), caseTree(), caseLint(), caseMesh(), caseBark(), caseOrganicFork(), caseCuffDepth(), caseBarkHighlight()];
+}
+
+function caseBarkHighlight(): RootResult {
+  const c = claims(), scene = new THREE.Scene(), tag = {};
+  const source = new THREE.MeshStandardMaterial(), mesh = new THREE.Mesh(new THREE.BoxGeometry(), source);
+  mesh.userData.pickTag = tag; scene.add(mesh);
+  // Exercise the selection logic without a WebGL context. The texture arrives
+  // after selection, as it does the first time an editor variant is chosen.
+  const preview = Object.create(Scene3D.prototype) as Scene3D;
+  const clones = new Map<string, THREE.Material>();
+  Object.assign(preview, { scene, editorLayer: new THREE.Group(), highlighted: new Map(), highlightMaterials: clones });
+  const sync = () => (preview as unknown as { syncHighlight(): void }).syncHighlight();
+  preview.setHighlight(new Map([[tag, "#ffaa00"]])); sync();
+  const before = mesh.material;
+  source.map = new THREE.Texture(); source.needsUpdate = true; sync();
+  c.check("a selected root refreshes its highlight when the authored texture arrives", mesh.material !== before && mesh.material.map === source.map);
+  const loaded = mesh.material; sync();
+  c.check("a loaded highlighted material is reused on subsequent frames", mesh.material === loaded);
+  preview.setHighlight(new Map()); sync();
+  c.check("deselecting restores the loaded source material", mesh.material === source);
+  for (const m of clones.values()) m.dispose();
+  source.map.dispose(); source.dispose(); mesh.geometry.dispose();
+  return { name: "root-bark-highlight - asynchronous variant loading stays visible while selected", passed: c.passed(), details: c.details };
 }
 
 function caseOrganicFork(): RootResult {
