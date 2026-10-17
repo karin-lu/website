@@ -47,7 +47,6 @@ function capLeaf(
   ctx.quadraticCurveTo(midX + nx * width, midY + ny * width, tx, ty);
   ctx.quadraticCurveTo(midX - nx * width, midY - ny * width, 0, baseY);
   ctx.fill();
-  ctx.stroke();
 }
 
 export function drawStarberry(ctx: CanvasRenderingContext2D, vine: VineCord, alpha: number): void {
@@ -104,13 +103,13 @@ export function drawStarberry(ctx: CanvasRenderingContext2D, vine: VineCord, alp
     const r = berry.radius;
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(x + r * 0.025, y, r * 0.91, r, Math.atan2(axis.x, -axis.y), 0, Math.PI * 2);
+    ctx.ellipse(x, y, r * 0.98, r, Math.atan2(axis.x, -axis.y), 0, Math.PI * 2);
     ctx.clip();
     const body = ctx.createRadialGradient(x, y, 0, x, y, r);
-    body.addColorStop(0, berry.held ? "#f7c46a" : "#e9a24a");
-    body.addColorStop(0.3, "#b8621c");
-    body.addColorStop(0.75, "#7e3a0e");
-    body.addColorStop(1, "#4e2107");
+    body.addColorStop(0, berry.held ? "#f7c46a" : "#f4b45e");
+    body.addColorStop(0.3, "#e8a55c");
+    body.addColorStop(0.75, "#e2a74b");
+    body.addColorStop(1, "#c18a36");
     ctx.fillStyle = body;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
     ctx.restore();
@@ -127,23 +126,18 @@ export function drawStarberry(ctx: CanvasRenderingContext2D, vine: VineCord, alp
       const n = Math.sin((settings.seed * 0.0137 + i * 7.31) * 127.1 + (leaf * 1.73 + salt) * 311.7) * 43758.5453;
       return n - Math.floor(n);
     };
-    const outer = 4 + Math.floor(random(0, 1) * 2);
-    const inner = 2 + Math.floor(random(0, 2) * 2);
-    for (let leaf = 0; leaf < outer + inner; leaf++) {
-      const isOuter = leaf < outer;
-      const n = isOuter ? outer : inner;
-      const k = isOuter ? leaf : leaf - outer;
-      // Spread across the cap, -1 to 1, a little irregular.
-      const spread = (n === 1 ? 0 : (k / (n - 1)) * 2 - 1) * (isOuter ? 1 : 0.7) + (random(leaf, 3) - 0.5) * 0.25;
-      const length = isOuter ? 0.85 + 0.25 * random(leaf, 4) : 0.55 + 0.2 * random(leaf, 4);
-      const tone = CAP_GREENS[random(leaf, 5) < (isOuter ? 0.35 : 0.15) ? 0 : random(leaf, 5) < (isOuter ? 0.8 : 0.55) ? 1 : 2]!;
+    const n = 5;
+    for (let leaf = 0; leaf < n; leaf++) {
+      const spread = ((leaf / (n - 1)) * 2 - 1) + (random(leaf, 3) - 0.5) * 0.12;
+      const length = 0.95 + 0.08 * random(leaf, 4);
+      const tone = CAP_GREENS[random(leaf, 5) < 0.25 ? 0 : random(leaf, 5) < 0.7 ? 1 : 2]!;
       capLeaf(
         ctx,
         r,
-        spread * r * length,
+        spread * r * length * 1.2,
         -r * (1.04 - length * (0.55 + 0.25 * (1 - Math.abs(spread)))),
-        r * (isOuter ? 0.3 : 0.28) * (0.85 + 0.35 * random(leaf, 6)),
-        (isOuter ? 0.08 + 0.1 * random(leaf, 7) : 0.04) * r * (spread || 1),
+        r * 0.30 * (0.95 + 0.1 * random(leaf, 6)),
+        0.08 * r * (spread || 1),
         tone,
       );
     }

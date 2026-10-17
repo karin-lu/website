@@ -13,7 +13,7 @@ export function berryCordRadius(fraction: number, seed: number): number {
 }
 
 // The cord's colour: a dark woody brown, against a plain vine's green.
-export const BERRY_CORD_COLOR = "#4a3423";
+export const BERRY_CORD_COLOR = "#78633d";
 
 // A berry stalk's radius where it leaves the cord, metres; it tapers to about
 // two thirds of that at the berry.

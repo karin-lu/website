@@ -1,5 +1,5 @@
 // The berry of a berry vine and its leafy cap (`starberryVisual.ts`). The
-// shape is karin-lu's round lantern berry (`add-boulder-and-root-generation`,
+// shape refines karin-lu's round lantern berry (`add-boulder-and-root-generation`,
 // f831e14); the flesh and the cap follow Tris's reference: a dark, translucent
 // amber fruit with a faint light glowing at its heart, pale flecks suspended
 // in it catching that light, under a cap of leaves stacked on it and on each
@@ -13,9 +13,9 @@ const hash = (x: number, y: number, z: number): number => {
   return n - Math.floor(n);
 };
 
-// Flecks in the flesh, as directions on the unit sphere with a size and a
+// Soft paint dabs in the flesh, as directions on the unit sphere with a size and a
 // brightness each.
-const FLECKS = Array.from({ length: 360 }, (_, i) => {
+const FLECKS = Array.from({ length: 28 }, (_, i) => {
   const u = hash(i, 1, 7) * 2 - 1;
   const phi = hash(i, 2, 9) * Math.PI * 2;
   const s = Math.sqrt(1 - u * u);
@@ -23,8 +23,8 @@ const FLECKS = Array.from({ length: 360 }, (_, i) => {
     x: s * Math.cos(phi),
     y: u,
     z: s * Math.sin(phi),
-    size: 0.012 + Math.pow(hash(i, 3, 5), 2) * 0.04,
-    strength: 0.35 + hash(i, 4, 3) * 0.65,
+    size: 0.12 + hash(i, 3, 5) * 0.16,
+    strength: 0.3 + hash(i, 4, 3) * 0.4,
   };
 });
 
@@ -48,7 +48,7 @@ export function roundBerryTexture(): THREE.DataTexture {
         const d = 1 - (nx * f.x + ny * f.y + nz * f.z);
         if (d > f.size * f.size * 2) continue;
         const r = Math.sqrt(2 * d) / f.size;
-        fleck = Math.max(fleck, f.strength * (1 - r * r));
+        fleck = Math.max(fleck, f.strength * Math.pow(Math.max(0, 1 - r * r), 2));
       }
       const at = (y * width + x) * 4;
       const v = Math.round(255 * fleck);
@@ -65,56 +65,123 @@ export function roundBerryTexture(): THREE.DataTexture {
   return texture;
 }
 
-// One berry's material: a dark glossy skin over flesh lit from inside. The
-// light is computed rather than mapped, by how square the surface faces the
-// eye - so it is always at the berry's heart whichever way the stalk has
-// turned it: a deep amber body darkening to the rim, a faint warm glow at the
-// centre, and the flecks lit by it, brightest where it is. `glow` scales all
-// of it (the vine's glow setting and the grab pulse).
-//
-// The colours are linear radiance chosen for the scene's ACES Filmic curve
-// (`configureRenderer`): it lifts and bleaches anything bright, so a dark
-// translucent fruit is said in small numbers.
+// Waxy skin over light-absorbing flesh. Physical transmission carries the
+// scenery through the fruit; a short object-space volume integral describes
+// its own light, so rotating the camera cannot paint a highlight on its heart.
+// Thickness is in local radii; absorption distance is world metres, updated
+// on resize. A chord through the fruit makes its edges thinner than its heart.
 export function roundBerryMaterial(flecks: THREE.Texture): {
-  material: THREE.MeshStandardMaterial;
+  material: THREE.MeshPhysicalMaterial;
   glow: { value: number };
 } {
   const glow = { value: 1 };
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x2a1004,
-    // White, so the map's value comes through untouched (see the shader).
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0xffefd2,
     emissive: 0xffffff,
     emissiveMap: flecks,
-    roughness: 0.24,
+    roughness: 0.25,
     metalness: 0,
+    transmission: 0.97,
+    thickness: 2,
+    attenuationColor: new THREE.Color(0xffdf9e),
+    attenuationDistance: 0.72,
+    ior: 1.24,
+    clearcoat: 0,
+    clearcoatRoughness: 0.15,
+    specularIntensity: 0.22,
   });
   material.onBeforeCompile = (shader) => {
     shader.uniforms.berryGlow = glow;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", `#include <common>
+        varying vec3 vBerryLocal;
+        varying vec3 vBerryEye;`)
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+        vBerryLocal = position;
+        mat4 berryViewInverse = inverse(modelViewMatrix);
+        vBerryEye = isOrthographic
+          ? position + (berryViewInverse * vec4(0.0, 0.0, 100.0, 0.0)).xyz
+          : (berryViewInverse * vec4(0.0, 0.0, 0.0, 1.0)).xyz;`);
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform float berryGlow;")
+      .replace("#include <common>", `#include <common>
+        uniform float berryGlow;
+        varying vec3 vBerryLocal;
+        varying vec3 vBerryEye;`)
       .replace(
         "#include <emissivemap_fragment>",
         `#include <emissivemap_fragment>
         float berryFleck = totalEmissiveRadiance.r;
-        float berryFacing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-        vec3 berryLight = mix(vec3(0.05, 0.014, 0.002), vec3(0.13, 0.045, 0.005), smoothstep(0.0, 0.85, berryFacing));
-        berryLight += vec3(0.6, 0.22, 0.04) * pow(berryFacing, 9.0);
-        berryLight += vec3(0.34, 0.16, 0.03) * berryFleck * pow(berryFacing, 2.0);
-        totalEmissiveRadiance = berryLight * berryGlow;`,
-      );
+        // Broad translucent brush dabs, with no dots or sharp skin detail.
+        diffuseColor.rgb *= mix(vec3(0.98, 0.96, 0.93), vec3(1.04, 1.02, 0.99), berryFleck);
+        vec3 berryRay = normalize(vBerryLocal - vBerryEye);
+        float berryB = dot(vBerryLocal, berryRay);
+        float berryChord = max(0.0, -berryB + sqrt(max(0.0,
+          berryB * berryB + 1.0 - dot(vBerryLocal, vBerryLocal))));
+        vec3 berryLight = vec3(0.0);
+        // A broad luminous heart diffused through amber pulp. Absorption grows
+        // with distance through the flesh, independently in each colour.
+        for (int sampleIndex = 0; sampleIndex < 8; sampleIndex++) {
+          float distanceIn = berryChord * (float(sampleIndex) + 0.5) / 8.0;
+          vec3 samplePoint = vBerryLocal + berryRay * distanceIn;
+          float heart = exp(-2.8 * dot(samplePoint, samplePoint));
+          berryLight += vec3(1.8, 0.85, 0.16) * (0.20 + heart)
+            * exp(-vec3(0.35, 0.65, 1.6) * distanceIn) * berryChord / 8.0;
+        }
+        berryLight += vec3(0.06, 0.035, 0.012) * berryFleck
+          * (0.15 + length(berryLight));
+        totalEmissiveRadiance = berryLight * berryGlow * 0.82;`,
+      )
+      .replace("#include <lights_physical_pars_fragment>", `
+        #include <lights_physical_pars_fragment>
+        void RE_Direct_Berry(const in IncidentLight light, const in vec3 position,
+          const in vec3 n, const in vec3 viewDir, const in vec3 coatNormal,
+          const in PhysicalMaterial mat, inout ReflectedLight reflected) {
+          RE_Direct_Physical(light, position, n, viewDir, coatNormal, mat, reflected);
+          float back = max(0.0, -dot(n, light.direction));
+          float forwardScatter = pow(max(0.0, dot(viewDir, -light.direction)), 3.0);
+          vec3 absorbed = exp(-vec3(0.7, 1.4, 3.0) * (0.25 + back));
+          // Shadow-attenuated scene light passing through the flesh, warmest
+          // through its thick middle and strongest toward a light behind it.
+          reflected.directDiffuse += light.color * absorbed * back
+            * (0.12 + 0.32 * forwardScatter) * RECIPROCAL_PI;
+        }
+        #undef RE_Direct
+        #define RE_Direct RE_Direct_Berry
+      `)
+      .replace("#include <transmission_fragment>", THREE.ShaderChunk.transmission_fragment.replace(
+        "material.thickness = thickness;",
+        "material.thickness = thickness * clamp(berryChord * 0.5, 0.025, 1.0);",
+      ));
   };
-  material.customProgramCacheKey = () => "translucent-berry";
+  material.customProgramCacheKey = () => "painterly-berry-volume-v6";
   return { material, glow };
 }
 
-// A softly asymmetric, slightly oval berry with a rounded bottom (karin's).
+// Matte cap paint: its mesh supplies broad green-to-yellow brush tones.
+// Keep this separate from the detailed botanical material on the vines.
+export function berryCapMaterial(): THREE.MeshStandardMaterial {
+  return new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.95,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  });
+}
+
+// Shared by the skin and the draped cap, so leaves rest on the actual fruit.
+// The stem seat is shallow; the shoulders stay full and the base rounded.
+function berrySurface(x: number, y: number, z: number): [number, number, number] {
+  const seat = 0.018 * Math.exp(-(x * x + z * z) / 0.045) * Math.max(0, y);
+  return [x * 0.98, y - seat, z * 0.98];
+}
+
 function berryShape(g: THREE.BufferGeometry): THREE.BufferGeometry {
   const p = g.getAttribute("position");
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i);
     const y = p.getY(i);
     const z = p.getZ(i);
-    p.setXYZ(i, x * (0.91 + 0.04 * y + 0.02 * z) + 0.025 * (1 - y * y), y + 0.015 * (1 - y * y) * x, z * 0.92);
+    p.setXYZ(i, ...berrySurface(x, y, z));
   }
   p.needsUpdate = true;
   g.computeVertexNormals();
@@ -122,52 +189,39 @@ function berryShape(g: THREE.BufferGeometry): THREE.BufferGeometry {
 }
 
 export function roundBerryGeometry(): THREE.BufferGeometry {
-  return berryShape(new THREE.SphereGeometry(1, 48, 32));
+  return berryShape(new THREE.SphereGeometry(1, 64, 48));
 }
 
-// The cap's leaves, after Tris's reference: long pointed leaves, each folded
-// along a raised midrib, rising out of the stalk on top of the berry, arching
-// down over its shoulder and curling their tips out and up - a crown wider
-// than the berry's top. They DRAPE: each leaf is laid over the fruit and over
-// every leaf laid before it, so it rests on what is under it along its length
-// and across its width, follows the edge of the leaf it overlaps, and never
-// stands off into the air except at its tip. Painted by the standard vine's
-// leaf material (`makeVineLeafMaterial`: its veins, mottle and light through
-// the leaf), in the reference's muted olives, yellowing toward the tip.
-// Every berry's cap is its own (the vine's seed and the berry's index): how
-// many leaves, where each stands round the stalk, its length, width, bow,
-// fold and curl, and its green.
-
+// A simple rosette of broad, softly cupped leaves. The cap keeps its
+// draped silhouette, with broad painted tones instead of veins and mottling.
 // Olive greens, linear (sRGB ~#3f4c1c, #56662a, #6f7e35), and the yellower
 // olive the tips turn toward (~#8e9440).
 const LEAF_OLIVES = [
-  [0.049, 0.072, 0.012],
-  [0.092, 0.133, 0.024],
-  [0.159, 0.209, 0.036],
+  [0.095, 0.16, 0.042],
+  [0.16, 0.245, 0.065],
+  [0.23, 0.32, 0.10],
 ] as const;
-const LEAF_TIP = [0.27, 0.3, 0.05] as const;
+const LEAF_TIP = [0.34, 0.39, 0.14] as const;
 
 // The cap's tiers, laid bottom first: how many leaves (the least, and how many
 // more), how far down the fruit they run (radians of arc, and the spread), the
 // leaf's greatest half-width as a share of its length, how far the tip curls
 // off (berry radii), and the green it leans to (0 dark to 1 light).
 const CAP_TIERS = [
-  { count: 6, extra: 2, reach: 1.0, reachSpread: 0.12, width: 0.21, curl: 0.22, light: 0.3 },
-  { count: 5, extra: 2, reach: 0.8, reachSpread: 0.1, width: 0.22, curl: 0.14, light: 0.55 },
-  { count: 3, extra: 1, reach: 0.55, reachSpread: 0.08, width: 0.22, curl: 0.06, light: 0.8 },
+  { count: 5, extra: 0, reach: 1.00, reachSpread: 0.04, width: 0.31, curl: 0.07, light: 0.6 },
 ] as const;
 // How far out from the stalk's axis a leaf's base grips the knot, in stalk
 // radii: just outside the knot's swelling (`roundBerryKnot`).
-const KNOT_GRIP = 1.7;
+const KNOT_GRIP = 1.35;
 // A leaf's thickness, in berry radii (2.4 mm on the default 15 cm berry): how
 // far a leaf lies above whatever it rests on.
 const LEAF_THICKNESS = 0.016;
 // How far the leaf's halves fall away from its midrib, as a share of its
 // half-width: the fold that gives each leaf its keel.
-const LEAF_FOLD = 0.3;
+const LEAF_FOLD = 0.20;
 // The leaf mesh: rows along it, columns across (odd, so one runs down the
 // midrib, which the vine material's veins are drawn along at u = 0.5).
-const LEAF_ROWS = 22;
+const LEAF_ROWS = 30;
 const LEAF_COLUMNS = 12;
 
 // One leaf's centreline and outline over the fruit, in the berry's frame.
@@ -196,7 +250,7 @@ function leafAzimuth(leaf: CapLeaf, t: number): number {
 // Half the leaf's width at `t`, radians of arc: a narrow base, widest a third
 // of the way along, drawn to a long point.
 function leafHalfWidth(leaf: CapLeaf, t: number): number {
-  return leaf.width * leaf.reach * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.72)), 0.85) * (1 - 0.15 * t);
+  return leaf.width * leaf.reach * Math.pow(Math.max(0, Math.sin(Math.PI * t)), 0.5);
 }
 
 // The direction of the point `across` (-1 to 1) of the way across the leaf at
@@ -304,10 +358,11 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
         for (let column = 0; column < columns; column++) {
           const dir = leafDirection(leaf, t, (column / LEAF_COLUMNS) * 2 - 1, new THREE.Vector3());
           directions.push(dir);
-          support[row * columns + column] = Math.max(1.004, restingOn(laid, dir) + LEAF_THICKNESS);
+          support[row * columns + column] = Math.max(1.045, restingOn(laid, dir) + LEAF_THICKNESS);
         }
       }
-      const fold = (t: number, across: number): number => LEAF_FOLD * leafHalfWidth(leaf, t) * (1 - Math.abs(across));
+      const fold = (t: number, across: number): number =>
+        LEAF_FOLD * leafHalfWidth(leaf, t) * (1 - across * across);
       // The lowest the row's section can sit at a given lean.
       const seat = (row: number, lean: number): number => {
         const t = row / LEAF_ROWS;
@@ -320,14 +375,15 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
       };
       const lean = new Float32Array(rows);
       for (let row = 0; row < rows; row++) {
-        let best = Infinity;
-        for (let i = -6; i <= 6; i++) {
-          const h = seat(row, i * 0.02);
-          if (h < best) {
-            best = h;
-            lean[row] = i * 0.02;
-          }
+        // Seat is convex in lean. A continuous search avoids the old 0.02
+        // steps making little hard creases between adjacent leaf sections.
+        let low = -0.12, high = 0.12;
+        for (let i = 0; i < 14; i++) {
+          const a = low + (high - low) / 3, b = high - (high - low) / 3;
+          if (seat(row, a) < seat(row, b)) high = b;
+          else low = a;
         }
+        lean[row] = (low + high) * 0.5;
       }
       // The lean eased along the leaf, which bends it gently rather than
       // twisting it row by row; then each row seated at that lean.
@@ -354,7 +410,7 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
         // Rising out of the stalk at the base, and curling off what it rests
         // on at the tip, late and sharply.
         const rise = 0.06 * Math.pow(Math.max(0, 1 - t / 0.25), 2);
-        const tip = Math.max(0, (t - 0.55) / 0.45);
+        const tip = Math.max(0, (t - 0.72) / 0.28);
         const curl = leaf.curl * tip * tip;
         for (let column = 0; column < columns; column++) {
           const across = (column / LEAF_COLUMNS) * 2 - 1;
@@ -366,9 +422,12 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
           leaf.radii[row * columns + column] = lying;
           // The curl turns the tip out AND up, back toward the stalk, as the
           // reference's tips turn.
-          let x = dir.x * radius;
-          let y = dir.y * radius + curl;
-          let z = dir.z * radius;
+          let [x, y, z] = berrySurface(dir.x * radius, dir.y * radius, dir.z * radius);
+          y += curl;
+          // Hug the shoulder along the blade; only the final tip flares out.
+          const spread = 1 + 0.12 * tip * tip;
+          x *= spread;
+          z *= spread;
           // The base GROWS OUT OF THE STALK: blended from where the leaf lies
           // to a collar round the knot (`roundBerryKnot`), wrapped part way
           // round it - each tier a little higher up the knot than the one
@@ -391,8 +450,8 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
           uvs.push(column / LEAF_COLUMNS, t);
           // Darker at the base, yellowing toward the tip; the midrib a shade
           // lighter.
-          const yellow = 0.35 * t * t;
-          const rib = column === LEAF_COLUMNS / 2 ? 1.12 : 1;
+          const yellow = 0.24 * t;
+          const rib = 1 + 0.16 * Math.sin(Math.PI * column / LEAF_COLUMNS) * Math.sin(Math.PI * t);
           colors.push(
             (tone[0] * shade * (1 - yellow) + LEAF_TIP[0] * yellow) * rib,
             (tone[1] * shade * (1 - yellow) + LEAF_TIP[1] * yellow) * rib,
@@ -423,7 +482,60 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
   g.setAttribute("leafRing", new THREE.Float32BufferAttribute(new Float32Array(count * 4), 4));
   g.setIndex(indices);
   g.computeVertexNormals();
+  thickenCap(g);
   return g;
+}
+
+// A real underside and a closed, softly rounded edge, rather than a
+// double-sided zero-thickness sheet. Each leaf keeps its own topology.
+function thickenCap(g: THREE.BufferGeometry): void {
+  const p = g.getAttribute("position");
+  const n = g.getAttribute("normal");
+  const uv = g.getAttribute("uv");
+  const color = g.getAttribute("color");
+  const count = p.count;
+  const positions = Array.from(p.array);
+  const uvs = Array.from(uv.array);
+  const colors = Array.from(color.array);
+  const front = Array.from(g.index!.array);
+  const indices = [...front];
+  for (let i = 0; i < count; i++) {
+    const across = uv.getX(i) * 2 - 1;
+    // A fleshy centre thinning smoothly into the outline and tip.
+    const along = Math.sqrt(Math.max(0, Math.sin(Math.PI * uv.getY(i))));
+    const thickness = 0.009 + 0.040 * along * Math.pow(Math.max(0, 1 - across * across), 0.65);
+    positions.push(p.getX(i) - n.getX(i) * thickness,
+      p.getY(i) - n.getY(i) * thickness, p.getZ(i) - n.getZ(i) * thickness);
+    uvs.push(uv.getX(i), uv.getY(i));
+    colors.push(color.getX(i) * 0.93, color.getY(i) * 0.95, color.getZ(i) * 0.93);
+  }
+  for (let i = 0; i < front.length; i += 3) {
+    indices.push(front[i]! + count, front[i + 2]! + count, front[i + 1]! + count);
+  }
+  const stride = LEAF_COLUMNS + 1;
+  const leafVertices = (LEAF_ROWS + 1) * stride;
+  for (let start = 0; start < count; start += leafVertices) {
+    const perimeter: number[] = [];
+    for (let c = 0; c < LEAF_COLUMNS; c++) perimeter.push(start + c);
+    for (let r = 0; r < LEAF_ROWS; r++) perimeter.push(start + r * stride + LEAF_COLUMNS);
+    for (let c = LEAF_COLUMNS; c > 0; c--) perimeter.push(start + LEAF_ROWS * stride + c);
+    for (let r = LEAF_ROWS; r > 0; r--) perimeter.push(start + r * stride);
+    for (let i = 0; i < perimeter.length; i++) {
+      const a = perimeter[i]!, b = perimeter[(i + 1) % perimeter.length]!;
+      indices.push(a, a + count, b, b, a + count, b + count);
+    }
+  }
+  g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  for (const [name, itemSize] of [["leafShape", 4], ["leafFaceTurn", 1], ["leafWrap", 4], ["leafRing", 4]] as const) {
+    // All deformation is baked into these caps; these zero attributes let
+    // them share the vine's leaf and shadow shaders without extra movement.
+    g.setAttribute(name, new THREE.Float32BufferAttribute(new Float32Array(count * 2 * itemSize), itemSize));
+  }
+  g.setIndex(indices);
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
 }
 
 // The knot: the stalk's end swelling into the top of the berry, in STALK
@@ -433,18 +545,20 @@ export function berryCapGeometry(seed: number, berry: number, size: number): THR
 export function roundBerryKnot(): THREE.BufferGeometry {
   const positions: number[] = [];
   const indices: number[] = [];
-  const rings = [
+  const profile = [
     [1.6, -1.2],
     [1.75, 0],
     [1.55, 1.2],
     [1.25, 2.2],
     [1.0, STALK_KNOT_HEIGHT / STALK_RADIUS],
   ];
-  const around = 14;
+  const rings = new THREE.CatmullRomCurve3(profile.map(([r, h]) => new THREE.Vector3(r!, h!, 0)))
+    .getPoints(24).map(p => [p.x, p.y]);
+  const around = 24;
   for (const [ring, [radius, height]] of rings.entries()) {
     for (let i = 0; i <= around; i++) {
       const angle = (i / around) * Math.PI * 2;
-      const wobble = 1 + 0.06 * Math.sin(angle * 3 + ring);
+      const wobble = 1 + 0.015 * Math.sin(angle * 3 + ring * 0.2);
       positions.push(Math.cos(angle) * radius! * wobble, height!, Math.sin(angle) * radius! * wobble);
       if (ring < rings.length - 1 && i < around) {
         const a = ring * (around + 1) + i;

@@ -17,12 +17,12 @@ import { BERRY_CORD_DEPTH, berrySide, restStarberries } from "../level/starberry
 import { threeY } from "./space";
 import {
   berryCapGeometry,
+  berryCapMaterial,
   roundBerryGeometry,
   roundBerryKnot,
   roundBerryMaterial,
   roundBerryTexture,
 } from "./roundBerry";
-import { makeVineLeafMaterial, makeVineLeafShadowMaterial } from "./vineLeafMaterial";
 import {
   BERRY_CORD_COLOR,
   STALK_RADIUS,
@@ -40,7 +40,7 @@ function grainTexture(): THREE.DataTexture {
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const n = Math.sin(Math.floor(x / 5) * 73.7 + Math.floor(y / 15) * 19.3) * 43758.5;
-      const tone = 0.7 + (n - Math.floor(n)) * 0.25 + Math.sin(x * 2.7 + y * 0.8) * 0.025;
+      const tone = 0.9 + (n - Math.floor(n)) * 0.06 + Math.sin(x * 0.35 + y * 0.12) * 0.025;
       const at = (y * width + x) * 4;
       pixels[at] = Math.round(255 * tone);
       pixels[at + 1] = Math.round(255 * tone);
@@ -58,7 +58,7 @@ function grainTexture(): THREE.DataTexture {
 }
 
 // Segments in one stalk's curve.
-const STALK_SEGMENTS = 9;
+const STALK_SEGMENTS = 16;
 
 interface Plant {
   group: THREE.Group;
@@ -72,7 +72,7 @@ interface Plant {
   // was: a new seed or a resized berry regrows them.
   capSeed: number;
   capRadii: number[];
-  materials: THREE.MeshStandardMaterial[];
+  materials: THREE.MeshPhysicalMaterial[];
   // Each berry's light, as its material reads it (`roundBerryMaterial`).
   glows: { value: number }[];
   pulse: number[];
@@ -86,7 +86,7 @@ export class StarberryLayer {
   private readonly knotGeometry = roundBerryKnot();
   // The flecks every berry shares, made with the first plant.
   private flecks: THREE.DataTexture | null = null;
-  private readonly stemGeometry = new THREE.CylinderGeometry(1, 1, 1, 6);
+  private readonly stemGeometry = new THREE.CylinderGeometry(1, 1, 1, 12);
   private readonly grain = grainTexture();
   // The cord and the stalks: one woody brown, so the stalks read as the
   // vine's own growth and the leaves are the only green.
@@ -100,11 +100,10 @@ export class StarberryLayer {
     color: new THREE.Color(BERRY_CORD_COLOR),
     roughness: 0.96,
   });
-  // The cap's leaves: the standard vine's leaf material
-  // (`makeVineLeafMaterial`), each leaf's green carried as vertex colour.
-  private readonly leafMaterial = Object.assign(makeVineLeafMaterial(), { vertexColors: true });
-  private readonly leafDepthMaterial = makeVineLeafShadowMaterial(false);
-  private readonly leafDistanceMaterial = makeVineLeafShadowMaterial(true);
+  // The cap's broad painted leaves, with no fine botanical veins.
+  private readonly leafMaterial = berryCapMaterial();
+  private readonly leafDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
+  private readonly leafDistanceMaterial = new THREE.MeshDistanceMaterial();
   // Scratch, reused every frame.
   private readonly path: Vec2[] = [];
   private readonly dummy = new THREE.Object3D();
@@ -132,7 +131,7 @@ export class StarberryLayer {
   private create(): Plant {
     const group = new THREE.Group();
     const cord = this.instances(this.stemGeometry, this.cordMaterial, 352);
-    const stalks = this.instances(this.stemGeometry, this.cordMaterial, 128);
+    const stalks = this.instances(this.stemGeometry, this.cordMaterial, 256);
     group.add(cord, stalks);
     this.scene.add(group);
     return {
@@ -223,7 +222,7 @@ export class StarberryLayer {
         if (!plant.fruit[i]) {
           const { material, glow } = roundBerryMaterial(flecks);
           const mesh = new THREE.Mesh(this.berryGeometry, material);
-          mesh.castShadow = true;
+          mesh.castShadow = mesh.receiveShadow = true;
           const knot = new THREE.Mesh(this.knotGeometry, this.knotMaterial);
           knot.castShadow = true;
           plant.group.add(mesh, knot);
@@ -239,7 +238,14 @@ export class StarberryLayer {
         const knot = plant.knots[i]!;
         mesh.visible = knot.visible = true;
         mesh.position.set(berry.fruit.x, threeY(berry.fruit.y), 0);
-        mesh.scale.setScalar(berry.radius);
+        // Quiet seeded differences in fullness, shared by the cap. Keep the
+        // growth-axis height fixed so the stalk still meets the same seat.
+        const width = 1 + 0.005 * Math.sin(settings.seed * 1.73 + i * 9.17);
+        const depth = 1 + 0.005 * Math.sin(settings.seed * 0.91 + i * 5.31);
+        mesh.scale.set(berry.radius * width, berry.radius, berry.radius * depth);
+        // Three scales local thickness by the mesh, while attenuation uses
+        // world metres: keep the same flesh density when the editor resizes it.
+        plant.materials[i]!.attenuationDistance = berry.radius * 4.8;
         // The light inside it, as the vine's glow setting says (1.5 is the
         // look as made), brightening a moment when the hook takes it.
         plant.glows[i]!.value = (settings.glow / 1.5) * (1 + pulse * 0.8 + (berry.held ? 0.15 : 0));
@@ -263,7 +269,7 @@ export class StarberryLayer {
         cap.visible = true;
         cap.position.copy(mesh.position);
         cap.quaternion.copy(mesh.quaternion);
-        cap.scale.setScalar(berry.radius);
+        cap.scale.copy(mesh.scale);
         const side = berrySide(i, settings);
         // Out of the cord square to the plane, then into the berry along its
         // growth axis.
