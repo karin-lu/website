@@ -30,3 +30,8 @@ swing.tris.sh {
 rope.tris.sh {
 	redir https://swing.tris.sh{uri} permanent
 }
+
+# Shed! 锄大猫 (karin-lu/chonk). Caddy upgrades the /ws WebSocket connections without extra config.
+chonk.kat.lu {
+	reverse_proxy chonk:8080
+}

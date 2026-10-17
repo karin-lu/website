@@ -18,25 +18,26 @@ services:
       - clipboard
       - pool
       - rope
+      - chonk
 
   website:
-    image: ${WEBSITE_IMAGE}
+    image: ${WEBSITE_IMAGE:-ghcr.io/karin-lu/website:latest}
     restart: unless-stopped
     environment:
       - PORT=3000
 
   clipboard:
-    image: ${CLIPBOARD_IMAGE}
+    image: ${CLIPBOARD_IMAGE:-ghcr.io/karin-lu/website/clipboard:latest}
     restart: unless-stopped
 
   pool:
-    image: ${POOL_IMAGE}
+    image: ${POOL_IMAGE:-ghcr.io/karin-lu/website/pool:latest}
     restart: unless-stopped
     environment:
       - PORT=8080
 
   rope:
-    image: ${ROPE_IMAGE}
+    image: ${ROPE_IMAGE:-ghcr.io/karin-lu/website/rope:latest}
     restart: unless-stopped
     environment:
       - PORT=8080
@@ -45,6 +46,14 @@ services:
       # Recorded playtest runs. A bind mount rather than a named volume so the
       # host's backup cron (deploy/host-setup.sh) can read it directly.
       - /opt/website/playtests:/data/playtests
+
+  # Shed! 锄大猫 card game: static files + WebSocket rooms (karin-lu/chonk). Its own workflow pushes the
+  # image and restarts just this service; CHONK_IMAGE defaults so this file works without it being exported.
+  chonk:
+    image: ${CHONK_IMAGE:-ghcr.io/karin-lu/chonk:latest}
+    restart: unless-stopped
+    environment:
+      - PORT=8080
 
 volumes:
   caddy_data:
