@@ -12,11 +12,12 @@ p { position:fixed; bottom:22px; left:28px; color:#f0f1e8; background:#1f2430; }
 </style>
 <nav><button id="day">Daylight</button><button id="cave">Cave</button><button id="back">Backlight</button>
 <label>Glow <input id="glow" type="range" min="0" max="3" step="0.1" value="1.5"></label>
-<label>Turn <input id="turn" type="range" min="-3.14" max="3.14" step="0.01" value="0"></label><button id="front">Front</button><button id="side">Side</button><button id="above">Above</button></nav>
+<label>Turn <input id="turn" type="range" min="-3.14" max="3.14" step="0.01" value="0"></label><button id="front">Front</button><button id="side">Side</button><button id="above">Above</button><button id="below">Below</button></nav>
 <p>Actual game geometry and materials · small, medium and large fruit · opaque stems behind the skin show transmission</p>
 <script type="module">
 import * as THREE from '/node_modules/three/build/three.module.js';
-import { roundBerryGeometry, roundBerryKnot, roundBerryTexture, roundBerryMaterial, berryCapGeometry, berryCapMaterial } from '/src/render3d/roundBerry.ts';
+import { roundBerryGeometry, roundBerryKnot, roundBerryTexture, roundBerryMaterial, berryCapGeometry, berryCapMaterial, berryFullness } from '/src/render3d/roundBerry.ts';
+import { berryStalkRadius, STALK_KNOT_HEIGHT } from '/src/render/starberryArt.ts';
 import { Environment, configureRenderer } from '/src/render3d/environment.ts';
 const renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
 renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(devicePixelRatio);
@@ -31,16 +32,29 @@ const knotMaterial = new THREE.MeshStandardMaterial({color:0x78633d,roughness:0.
 const groups=[], glows=[];
 for (const [i, radius] of [0.12,0.18,0.24].entries()) {
   const group = new THREE.Group(); group.position.x=(i-1)*0.5;
-  const {material,glow} = roundBerryMaterial(texture); material.attenuationDistance=radius*4.8; glows.push(glow);
-  const fruit = new THREE.Mesh(geometry, material); fruit.scale.setScalar(radius);
-  const cap = new THREE.Mesh(berryCapGeometry(1701,i,radius),leafMaterial); cap.scale.setScalar(radius);
+  const {material,glow} = roundBerryMaterial(texture,1701+i*7.31); material.attenuationDistance=radius*4.8; glows.push(glow);
+  const {width,depth} = berryFullness(1701,i);
+  const fruit = new THREE.Mesh(geometry, material); fruit.scale.set(radius*width,radius,radius*depth);
+  const cap = new THREE.Mesh(berryCapGeometry(1701,i,radius),leafMaterial); cap.scale.copy(fruit.scale);
   const knot = new THREE.Mesh(knotGeometry,knotMaterial); knot.scale.setScalar(0.013); knot.position.y=radius;
   const stemCurve = new THREE.CubicBezierCurve3(
-    new THREE.Vector3(0,radius+0.045,0),
+    new THREE.Vector3(0,radius+STALK_KNOT_HEIGHT*0.8,0),
     new THREE.Vector3(0,radius+0.13,0),
     new THREE.Vector3(-0.065,radius+0.22,-0.015),
     new THREE.Vector3(-0.045,radius+0.32,-0.035));
-  const stem = new THREE.Mesh(new THREE.TubeGeometry(stemCurve,24,0.012,12,false),knotMaterial);
+  const stemGeometry = new THREE.TubeGeometry(stemCurve,16,1,8,false);
+  const stemPositions = stemGeometry.getAttribute('position');
+  for (let row=0; row<=16; row++) {
+    const centre = stemCurve.getPointAt(row/16);
+    const radiusAt = berryStalkRadius(1-row/16);
+    for (let col=0; col<=8; col++) {
+      const index=row*9+col;
+      const point = new THREE.Vector3().fromBufferAttribute(stemPositions,index).sub(centre).multiplyScalar(radiusAt).add(centre);
+      stemPositions.setXYZ(index,point.x,point.y,point.z);
+    }
+  }
+  stemGeometry.computeVertexNormals();
+  const stem = new THREE.Mesh(stemGeometry,knotMaterial);
   group.add(fruit,cap,knot,stem); scene.add(group); groups.push(group);
   const behind = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.65,12),
     new THREE.MeshStandardMaterial({color:0x8ca577,roughness:0.8}));
@@ -57,6 +71,7 @@ document.querySelector('#glow').oninput=e=>glows.forEach(g=>g.value=Number(e.tar
 document.querySelector('#turn').oninput=e=>groups.forEach(g=>g.rotation.y=Number(e.target.value));
 document.querySelector('#front').onclick=()=>groups.forEach(g=>g.rotation.set(0,0,0));
 document.querySelector('#side').onclick=()=>groups.forEach(g=>g.rotation.set(0,Math.PI/2,0));
+document.querySelector('#below').onclick=()=>groups.forEach(g=>g.rotation.set(-1.15,0,0));
 document.querySelector('#above').onclick=()=>groups.forEach(g=>g.rotation.set(1.15,0,0));
 renderer.setAnimationLoop(()=>renderer.render(scene,camera));
 </script>

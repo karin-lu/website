@@ -16,7 +16,7 @@ import {
 } from "./starberryArt";
 
 // The standard vine's three leaf greens (`render3d/vineVisual.ts`), in sRGB.
-const CAP_GREENS = ["#4f7540", "#648c48", "#829d58"];
+const CAP_GREENS = ["#3c7048", "#619047", "#82954d"];
 
 // One leaf of a berry's cap in the berry's own frame (the stalk up, -y): from
 // the top of a berry `r` across to its tip at (`tipX`, `tipY`), `width` across
@@ -41,7 +41,11 @@ function capLeaf(
   const midY = baseY + dy * 0.38;
   const tx = tipX + Math.sign(tipX || 1) * Math.abs(curl);
   const ty = tipY - Math.abs(curl);
-  ctx.fillStyle = fill;
+  const paint = ctx.createLinearGradient(0, baseY, tx, ty);
+  paint.addColorStop(0, "#3e6342");
+  paint.addColorStop(0.45, fill);
+  paint.addColorStop(1, "#a0ad61");
+  ctx.fillStyle = paint;
   ctx.beginPath();
   ctx.moveTo(0, baseY);
   ctx.quadraticCurveTo(midX + nx * width, midY + ny * width, tx, ty);
@@ -103,7 +107,7 @@ export function drawStarberry(ctx: CanvasRenderingContext2D, vine: VineCord, alp
     const r = berry.radius;
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(x, y, r * 0.98, r, Math.atan2(axis.x, -axis.y), 0, Math.PI * 2);
+    ctx.ellipse(x + axis.x * r * 0.07, y + axis.y * r * 0.07, r * 1.04, r * 0.93, Math.atan2(axis.x, -axis.y), 0, Math.PI * 2);
     ctx.clip();
     const body = ctx.createRadialGradient(x, y, 0, x, y, r);
     body.addColorStop(0, berry.held ? "#f7c46a" : "#f4b45e");
@@ -111,7 +115,7 @@ export function drawStarberry(ctx: CanvasRenderingContext2D, vine: VineCord, alp
     body.addColorStop(0.75, "#e2a74b");
     body.addColorStop(1, "#c18a36");
     ctx.fillStyle = body;
-    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    ctx.fillRect(x - r * 1.1, y - r * 1.1, r * 2.2, r * 2.2);
     ctx.restore();
     // ...under its cap, seen side on: the 3D cap's outer leaves first,
     // running down over the shoulder, then the shorter inner ones over their

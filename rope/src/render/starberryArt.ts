@@ -18,6 +18,11 @@ export const BERRY_CORD_COLOR = "#78633d";
 // A berry stalk's radius where it leaves the cord, metres; it tapers to about
 // two thirds of that at the berry.
 export const STALK_RADIUS = 0.013;
+// A gently tapered stalk with a soft widening into its calyx collar.
+export function berryStalkRadius(t: number): number {
+  return STALK_RADIUS * (0.98 - 0.26 * t + 0.06 * t * t * t * t);
+}
+
 // How far the knot at the top of a berry stands above it, metres: the stalk
 // runs into its top (`roundBerryAttachment`, `roundBerryKnot`).
 export const STALK_KNOT_HEIGHT = 0.04;

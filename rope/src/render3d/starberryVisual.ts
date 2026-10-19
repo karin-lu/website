@@ -17,6 +17,7 @@ import { BERRY_CORD_DEPTH, berrySide, restStarberries } from "../level/starberry
 import { threeY } from "./space";
 import {
   berryCapGeometry,
+  berryFullness,
   berryCapMaterial,
   roundBerryGeometry,
   roundBerryKnot,
@@ -27,6 +28,7 @@ import {
   BERRY_CORD_COLOR,
   STALK_RADIUS,
   berryCordRadius,
+  berryStalkRadius,
   naturalStemPoint,
   roundBerryAttachment,
   stemFraction,
@@ -220,7 +222,7 @@ export class StarberryLayer {
       for (let i = 0; i < berries.length; i++) {
         const berry = berries[i]!;
         if (!plant.fruit[i]) {
-          const { material, glow } = roundBerryMaterial(flecks);
+          const { material, glow } = roundBerryMaterial(flecks, settings.seed + i * 7.31);
           const mesh = new THREE.Mesh(this.berryGeometry, material);
           mesh.castShadow = mesh.receiveShadow = true;
           const knot = new THREE.Mesh(this.knotGeometry, this.knotMaterial);
@@ -240,8 +242,7 @@ export class StarberryLayer {
         mesh.position.set(berry.fruit.x, threeY(berry.fruit.y), 0);
         // Quiet seeded differences in fullness, shared by the cap. Keep the
         // growth-axis height fixed so the stalk still meets the same seat.
-        const width = 1 + 0.005 * Math.sin(settings.seed * 1.73 + i * 9.17);
-        const depth = 1 + 0.005 * Math.sin(settings.seed * 0.91 + i * 5.31);
+        const { width, depth } = berryFullness(settings.seed, i);
         mesh.scale.set(berry.radius * width, berry.radius, berry.radius * depth);
         // Three scales local thickness by the mesh, while attenuation uses
         // world metres: keep the same flesh density when the editor resizes it.
@@ -286,7 +287,7 @@ export class StarberryLayer {
         for (let j = 0; j < STALK_SEGMENTS && stalks < plant.stalks.instanceMatrix.count; j++) {
           this.curve.getPoint(j / STALK_SEGMENTS, this.a);
           this.curve.getPoint((j + 1) / STALK_SEGMENTS, this.b);
-          this.segment(plant.stalks, stalks++, this.a, this.b, STALK_RADIUS * (1 - (0.35 * j) / STALK_SEGMENTS));
+          this.segment(plant.stalks, stalks++, this.a, this.b, berryStalkRadius((j + 0.5) / STALK_SEGMENTS));
         }
       }
       for (let i = berries.length; i < plant.fruit.length; i++) {
